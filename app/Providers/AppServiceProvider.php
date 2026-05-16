@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Inertia\Inertia;
+use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +26,27 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configurePassport();
+    }
+
+    /**
+     * Configure Laravel Passport settings.
+     */
+    protected function configurePassport(): void
+    {
+        Passport::authorizationView(fn (array $params) => Inertia::render('oauth/Authorize', [
+            'client' => [
+                'id' => $params['client']->getKey(),
+                'name' => $params['client']->name,
+            ],
+            'user' => [
+                'name' => $params['user']->name,
+            ],
+            'scopes' => collect($params['scopes'])->map->toArray()->values(),
+            'authToken' => $params['authToken'],
+            'request' => $params['request']->all(),
+            'csrfToken' => csrf_token(),
+        ]));
     }
 
     /**

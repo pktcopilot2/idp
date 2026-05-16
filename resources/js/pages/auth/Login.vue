@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import TextLink from '@/components/TextLink.vue';
@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
@@ -23,6 +22,8 @@ defineProps<{
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
+    errors?: Record<string, string>;
+    csrfToken: string;
 }>();
 </script>
 
@@ -36,12 +37,9 @@ defineProps<{
         {{ status }}
     </div>
 
-    <Form
-        v-bind="store.form()"
-        :reset-on-success="['password']"
-        v-slot="{ errors, processing }"
-        class="flex flex-col gap-6"
-    >
+    <form :action="store().url" method="POST" class="flex flex-col gap-6">
+        <input type="hidden" name="_token" :value="csrfToken" />
+
         <div class="grid gap-6">
             <div class="grid gap-2">
                 <Label for="email">Email address</Label>
@@ -55,7 +53,7 @@ defineProps<{
                     autocomplete="email"
                     placeholder="email@example.com"
                 />
-                <InputError :message="errors.email" />
+                <InputError :message="errors?.email" />
             </div>
 
             <div class="grid gap-2">
@@ -78,7 +76,7 @@ defineProps<{
                     autocomplete="current-password"
                     placeholder="Password"
                 />
-                <InputError :message="errors.password" />
+                <InputError :message="errors?.password" />
             </div>
 
             <div class="flex items-center justify-between">
@@ -92,10 +90,8 @@ defineProps<{
                 type="submit"
                 class="mt-4 w-full"
                 :tabindex="4"
-                :disabled="processing"
                 data-test="login-button"
             >
-                <Spinner v-if="processing" />
                 Log in
             </Button>
         </div>
@@ -107,5 +103,5 @@ defineProps<{
             Don't have an account?
             <TextLink :href="register()" :tabindex="5">Sign up</TextLink>
         </div>
-    </Form>
+    </form>
 </template>
