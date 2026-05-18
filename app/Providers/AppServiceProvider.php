@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Passport\Client;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configurePassport(): void
     {
+        Passport::useClientModel(Client::class);
         Passport::authorizationView(fn (array $params) => Inertia::render('oauth/Authorize', [
             'client' => [
                 'id' => $params['client']->getKey(),

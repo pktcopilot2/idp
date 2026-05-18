@@ -123,4 +123,20 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Ldap Configuration
+    |--------------------------------------------------------------------------
+    | Here you may specify the LDAP server settings for authentication.
+    | You should set these values according to your LDAP server configuration.
+    |
+    */
+    'ldap' => [
+        'enabled' => env('LDAP_ENABLED', false),
+        'host' => env('LDAP_HOST', 'ldap.example.com'),
+        'port' => env('LDAP_PORT', 389),
+        'dn' => env('LDAP_DN', 'cn=admin,dc=example,dc=com'),
+        'pass' => env('LDAP_PASS', 'password'),
+        'tree' => env('LDAP_TREE', 'dc=example,dc=com'),
+    ],
 ];

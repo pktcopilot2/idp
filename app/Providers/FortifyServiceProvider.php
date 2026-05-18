@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -32,6 +34,7 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
+        $this->configureAuthentication();
     }
 
     /**
@@ -93,5 +96,72 @@ class FortifyServiceProvider extends ServiceProvider
 
             return Limit::perMinute(5)->by($throttleKey);
         });
+    }
+
+    /**
+     * Configure custom authentication logic.
+     */
+    private function configureAuthentication(): void
+    {
+        Fortify::authenticateUsing(function (Request $request) {
+            $ldapUser = $this->ldapAuthenticate($request->input(Fortify::username()), $request->password);
+            if ($ldapUser instanceof User) {
+                return $ldapUser;
+            }
+
+            $user = User::where(Fortify::username(), $request->input(Fortify::username()))->first();
+            if ($user && Hash::check($request->password, $user->password)) {
+                return $user;
+            }
+        });
+    }
+
+    /**
+     * Handle LDAP authentication logic.
+     */
+    private function ldapAuthenticate(string $username, string $password): User|false
+    {
+        $connection = ldap_connect(config('app.ldap.host'), config('app.ldap.port'));
+        ldap_set_option($connection, LDAP_OPT_PROTOCOL_VERSION, 3);
+        ldap_set_option($connection, LDAP_OPT_REFERRALS, 0);
+
+        if (! config('app.ldap.enabled') || ! $connection) {
+            return false;
+        }
+
+        if (! @ldap_bind($connection, config('app.ldap.dn'), config('app.ldap.pass'))) {
+            return false;
+        }
+
+        if (! str_contains($username, '@pupukkaltim.com')) {
+            $username .= '@pupukkaltim.com';
+        }
+
+        $result = @ldap_search(
+            $connection,
+            config('app.ldap.tree'),
+            "(mail={$username})",
+            ['displayname', 'mail', 'uid', 'ou', 'sn', 'givenname']
+        );
+
+        $entry = @ldap_first_entry($connection, $result);
+
+        if (! $entry) {
+            return false;
+        }
+
+        $userDn = @ldap_get_dn($connection, $entry);
+
+        if (! $userDn || ! @ldap_bind($connection, $userDn, $password)) {
+            return false;
+        }
+
+        $attrs = @ldap_get_attributes($connection, $entry);
+        $aliases = array_map(
+            fn (string $mail) => Str::before($mail, '@pupukkaltim.com'),
+            array_filter($attrs['mail'], fn ($key) => $key !== 'count', ARRAY_FILTER_USE_KEY)
+        );
+
+        return User::whereIn('username', $aliases)->first() ?? false;
     }
 }
