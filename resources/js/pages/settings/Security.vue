@@ -18,6 +18,7 @@ type Props = {
     canManageTwoFactor?: boolean;
     requiresConfirmation?: boolean;
     twoFactorEnabled?: boolean;
+    emailMfaEnabled?: boolean;
     passwordRules: string;
 };
 
@@ -25,6 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
     canManageTwoFactor: false,
     requiresConfirmation: false,
     twoFactorEnabled: false,
+    emailMfaEnabled: false,
 });
 
 defineOptions({
@@ -180,5 +182,49 @@ onUnmounted(() => clearTwoFactorAuthData());
             :requiresConfirmation="requiresConfirmation"
             :twoFactorEnabled="twoFactorEnabled"
         />
+    </div>
+
+    <div class="space-y-6">
+        <Heading
+            variant="small"
+            title="Email MFA"
+            description="Receive a one-time verification code via email each time you log in"
+        />
+
+        <div v-if="!emailMfaEnabled" class="flex flex-col items-start justify-start space-y-4">
+            <p class="text-sm text-muted-foreground">
+                When you enable email MFA, a 6-digit verification code will be
+                sent to your email address each time you sign in.
+            </p>
+
+            <Form
+                v-bind="SecurityController.enableEmailMfa.form()"
+                #default="{ processing }"
+            >
+                <Button type="submit" :disabled="processing">
+                    Enable email MFA
+                </Button>
+            </Form>
+        </div>
+
+        <div v-else class="flex flex-col items-start justify-start space-y-4">
+            <p class="text-sm text-muted-foreground">
+                Email MFA is active. A 6-digit code will be sent to your email
+                address each time you sign in.
+            </p>
+
+            <Form
+                v-bind="SecurityController.disableEmailMfa.form()"
+                #default="{ processing }"
+            >
+                <Button
+                    variant="destructive"
+                    type="submit"
+                    :disabled="processing"
+                >
+                    Disable email MFA
+                </Button>
+            </Form>
+        </div>
     </div>
 </template>

@@ -3,9 +3,15 @@
 namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
+use App\Actions\Fortify\RedirectIfEmailMfaRequired;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\TwoFactorLoginResponse;
 use App\Models\User;
+use Laravel\Fortify\Actions\AttemptToAuthenticate;
+use Laravel\Fortify\Actions\CanonicalizeUsername;
+use Laravel\Fortify\Actions\EnsureLoginIsNotThrottled;
+use Laravel\Fortify\Actions\PrepareAuthenticatedSession;
+use Laravel\Fortify\Contracts\RedirectsIfTwoFactorAuthenticatable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -97,6 +103,10 @@ class FortifyServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
         });
 
+        RateLimiter::for('email-mfa', function (Request $request) {
+            return Limit::perMinute(5)->by($request->session()->get('email_mfa.id'));
+        });
+
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
@@ -109,6 +119,17 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureAuthentication(): void
     {
+        Fortify::loginThrough(function () {
+            return [
+                config('fortify.limiters.login') ? null : EnsureLoginIsNotThrottled::class,
+                config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
+                Features::enabled(Features::twoFactorAuthentication()) ? RedirectsIfTwoFactorAuthenticatable::class : null,
+                RedirectIfEmailMfaRequired::class,
+                AttemptToAuthenticate::class,
+                PrepareAuthenticatedSession::class,
+            ];
+        });
+
         Fortify::authenticateUsing(function (Request $request) {
             session([
                 'url.intended' => session()->get('url.intended') ?? route('dashboard'),

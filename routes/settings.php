@@ -20,5 +20,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('user-password.update');
 
+    Route::post('settings/security/email-mfa', [SecurityController::class, 'enableEmailMfa'])->name('security.email-mfa.enable');
+    Route::delete('settings/security/email-mfa', [SecurityController::class, 'disableEmailMfa'])->name('security.email-mfa.disable');
+
     Route::inertia('settings/appearance', 'settings/Appearance')->name('appearance.edit');
 });

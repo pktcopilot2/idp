@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Validation\Rules\Password;
@@ -34,6 +35,7 @@ class SecurityController extends Controller implements HasMiddleware
         $props = [
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            'emailMfaEnabled' => (bool) $request->user()->email_mfa_enabled,
         ];
 
         if (Features::canManageTwoFactorAuthentication()) {
@@ -56,6 +58,30 @@ class SecurityController extends Controller implements HasMiddleware
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
+
+        return back();
+    }
+
+    /**
+     * Enable email MFA for the user.
+     */
+    public function enableEmailMfa(Request $request): RedirectResponse
+    {
+        $request->user()->update(['email_mfa_enabled' => true]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Email MFA enabled.')]);
+
+        return back();
+    }
+
+    /**
+     * Disable email MFA for the user.
+     */
+    public function disableEmailMfa(Request $request): RedirectResponse
+    {
+        $request->user()->update(['email_mfa_enabled' => false]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Email MFA disabled.')]);
 
         return back();
     }
