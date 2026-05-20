@@ -35,4 +35,21 @@ return [
         ],
     ],
 
+    'keycloak' => [
+        'client_id' => env('KEYCLOAK_CLIENT_ID'),
+        'client_secret' => env('KEYCLOAK_CLIENT_SECRET'),
+        'redirect' => env('KEYCLOAK_REDIRECT_URI'),
+        'base_url' => env('KEYCLOAK_BASE_URL'),
+        'realms' => env('KEYCLOAK_REALM'),
+    ],
+
+    'fusionauth' => [
+        'client_id' => env('FUSIONAUTH_CLIENT_ID'),
+        'client_secret' => env('FUSIONAUTH_CLIENT_SECRET'),
+        'redirect' => env('FUSIONAUTH_REDIRECT_URI'),
+        'base_url' => env('FUSIONAUTH_BASE_URL'),
+        'tenant_id' => env('FUSIONAUTH_TENANT_ID'),
+        'logout_url' => env('FUSIONAUTH_BASE_URL').'/oauth2/logout?client_id='.env('FUSIONAUTH_CLIENT_ID').'&tenantId='.env('FUSIONAUTH_TENANT_ID').'&post_logout_redirect_uri='.env('APP_URL').'/login',
+    ],
+
 ];

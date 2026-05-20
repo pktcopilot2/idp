@@ -94,6 +94,40 @@ defineProps<{
             >
                 Log in
             </Button>
+
+            <div class="relative">
+                <div class="absolute inset-0 flex items-center">
+                    <span class="w-full border-t" />
+                </div>
+                <div class="relative flex justify-center text-xs uppercase">
+                    <span class="bg-background px-2 text-muted-foreground">Or continue with</span>
+                </div>
+            </div>
+
+            <Button
+                as="a"
+                href="/login/keycloak"
+                type="button"
+                variant="outline"
+                class="w-full"
+                :tabindex="5"
+                data-test="login-keycloak-button"
+            >
+                Login with Keycloak (SSO Pusri)
+            </Button>
+
+            <!-- Add login as fusionauth -->
+            <Button
+                as="a"
+                href="/login/fusionauth"
+                type="button"
+                variant="outline"
+                class="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600"
+                :tabindex="6"
+                data-test="login-fusionauth-button"
+            >
+                Login with FusionAuth (PI Identik)
+            </Button>
         </div>
 
         <div
@@ -101,7 +135,7 @@ defineProps<{
             v-if="canRegister"
         >
             Don't have an account?
-            <TextLink :href="register()" :tabindex="5">Sign up</TextLink>
+            <TextLink :href="register()" :tabindex="6">Sign up</TextLink>
         </div>
     </form>
 </template>
