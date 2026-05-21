@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\RedirectIfEmailMfaRequired;
+use App\Actions\Fortify\RedirectIfPasswordResetRequired;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\TwoFactorLoginResponse;
 use App\Models\User;
@@ -124,6 +125,7 @@ class FortifyServiceProvider extends ServiceProvider
                 config('fortify.limiters.login') ? null : EnsureLoginIsNotThrottled::class,
                 config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
                 Features::enabled(Features::twoFactorAuthentication()) ? RedirectsIfTwoFactorAuthenticatable::class : null,
+                RedirectIfPasswordResetRequired::class,
                 RedirectIfEmailMfaRequired::class,
                 AttemptToAuthenticate::class,
                 PrepareAuthenticatedSession::class,

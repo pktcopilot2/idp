@@ -14,5 +14,8 @@ Route::get('/email-mfa-challenge', [\App\Http\Controllers\EmailMfaChallengeContr
 Route::post('/email-mfa-challenge', [\App\Http\Controllers\EmailMfaChallengeController::class, 'store'])->name('email-mfa.store')->middleware('throttle:email-mfa');
 Route::post('/email-mfa-challenge/resend', [\App\Http\Controllers\EmailMfaChallengeController::class, 'resend'])->name('email-mfa.resend')->middleware('throttle:email-mfa');
 
+Route::get('/force-password-reset', [\App\Http\Controllers\ForcePasswordResetController::class, 'create'])->name('force-password-reset.create');
+Route::post('/force-password-reset', [\App\Http\Controllers\ForcePasswordResetController::class, 'store'])->name('force-password-reset.store');
+
 Route::post('/logout', [\App\Http\Controllers\SsoController::class, 'logout'])->name('logout');
 Route::get('/logout', [\App\Http\Controllers\SsoController::class, 'logout'])->name('logout.get');
