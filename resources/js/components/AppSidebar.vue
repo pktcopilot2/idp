@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { AppWindow, BookOpen, FolderGit2, LayoutGrid } from 'lucide-vue-next';
+import { AppWindow, BookOpen, FolderGit2, LayoutGrid, User } from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -17,6 +17,7 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import clients from '@/routes/clients';
+import users from '@/routes/users';
 
 const mainNavItems: NavItem[] = [
     {
@@ -29,6 +30,11 @@ const mainNavItems: NavItem[] = [
         href: clients.index(),
         icon: AppWindow,
     },
+    {
+        title: 'Users',
+        href: users.index(),
+        icon: User,
+    }
 ];
 
 const footerNavItems: NavItem[] = [
