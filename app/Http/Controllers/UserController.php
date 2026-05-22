@@ -46,4 +46,32 @@ class UserController extends Controller
 
         return back();
     }
+
+    /**
+     * Unlock a locked user account and reset failed login attempts.
+     */
+    public function unlock(User $user): RedirectResponse
+    {
+        $user->update([
+            'locked_at' => null,
+            'failed_login_attempts' => 0,
+        ]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "{$user->name}'s account has been unlocked."]);
+
+        return back();
+    }
+
+    /**
+     * Toggle a user's active status.
+     */
+    public function toggleActive(User $user): RedirectResponse
+    {
+        $user->update(['active' => ! $user->active]);
+
+        $status = $user->active ? 'activated' : 'deactivated';
+        Inertia::flash('toast', ['type' => 'success', 'message' => "{$user->name}'s account has been {$status}."]);
+
+        return back();
+    }
 }

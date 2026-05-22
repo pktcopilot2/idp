@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
-import { Globe, Monitor, MonitorX, Smartphone, X } from 'lucide-vue-next';
+import { Globe, Lock, LockOpen, Monitor, MonitorX, MoreHorizontal, Smartphone, UserCheck, UserX, X } from 'lucide-vue-next';
 import { ref } from 'vue';
 import UserController from '@/actions/App/Http/Controllers/UserController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     Sheet,
     SheetContent,
@@ -33,6 +41,9 @@ type User = {
     email: string;
     email_mfa_enabled: boolean;
     is_need_password_reset: boolean;
+    active: boolean;
+    locked_at: string | null;
+    failed_login_attempts: number;
     active_sessions_count: number;
     sessions: UserSession[];
     tokens: UserToken[];
@@ -155,6 +166,20 @@ function getSessionClients(session: UserSession): string[] {
                         <td class="px-4 py-3">
                             <div class="flex flex-wrap gap-1">
                                 <Badge
+                                    v-if="!user.active"
+                                    variant="outline"
+                                    class="text-muted-foreground"
+                                >
+                                    Inactive
+                                </Badge>
+                                <Badge
+                                    v-if="user.locked_at"
+                                    variant="destructive"
+                                >
+                                    <Lock class="mr-1 h-3 w-3" />
+                                    Locked
+                                </Badge>
+                                <Badge
                                     v-if="user.email_mfa_enabled"
                                     variant="secondary"
                                 >
@@ -192,26 +217,69 @@ function getSessionClients(session: UserSession): string[] {
                             </button>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <Form
-                                v-bind="
-                                    UserController.destroySessions.form(user)
-                                "
-                                #default="{ processing }"
-                            >
-                                <Button
-                                    type="submit"
-                                    variant="ghost"
-                                    size="sm"
-                                    :disabled="
-                                        processing ||
-                                        user.active_sessions_count === 0
-                                    "
-                                    class="text-destructive hover:text-destructive"
-                                >
-                                    <MonitorX class="mr-1 h-4 w-4" />
-                                    Revoke all
-                                </Button>
-                            </Form>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger as-child>
+                                    <Button variant="ghost" size="icon" class="h-8 w-8">
+                                        <MoreHorizontal class="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+
+                                    <!-- Revoke sessions -->
+                                    <Form
+                                        v-bind="UserController.destroySessions.form(user)"
+                                        #default="{ processing }"
+                                    >
+                                        <DropdownMenuItem
+                                            as="button"
+                                            type="submit"
+                                            :disabled="processing || user.active_sessions_count === 0"
+                                            class="w-full text-destructive focus:text-destructive cursor-pointer"
+                                        >
+                                            <MonitorX class="mr-2 h-4 w-4" />
+                                            Revoke all sessions
+                                        </DropdownMenuItem>
+                                    </Form>
+
+                                    <DropdownMenuSeparator />
+
+                                    <!-- Unlock -->
+                                    <Form
+                                        v-if="user.locked_at"
+                                        v-bind="UserController.unlock.form(user)"
+                                        #default="{ processing }"
+                                    >
+                                        <DropdownMenuItem
+                                            as="button"
+                                            type="submit"
+                                            :disabled="processing"
+                                            class="w-full cursor-pointer"
+                                        >
+                                            <LockOpen class="mr-2 h-4 w-4" />
+                                            Unlock account
+                                        </DropdownMenuItem>
+                                    </Form>
+
+                                    <!-- Toggle active -->
+                                    <Form
+                                        v-bind="UserController.toggleActive.form(user)"
+                                        #default="{ processing }"
+                                    >
+                                        <DropdownMenuItem
+                                            as="button"
+                                            type="submit"
+                                            :disabled="processing"
+                                            class="w-full cursor-pointer"
+                                        >
+                                            <UserCheck v-if="!user.active" class="mr-2 h-4 w-4" />
+                                            <UserX v-else class="mr-2 h-4 w-4" />
+                                            {{ user.active ? 'Deactivate' : 'Activate' }}
+                                        </DropdownMenuItem>
+                                    </Form>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </td>
                     </tr>
                     <tr v-if="users.data.length === 0">

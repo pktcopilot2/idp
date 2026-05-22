@@ -14,7 +14,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Passport\Contracts\OAuthenticatable;
 use Laravel\Passport\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'email_mfa_enabled', 'is_need_password_reset'])]
+#[Fillable(['name', 'email', 'password', 'email_mfa_enabled', 'is_need_password_reset', 'failed_login_attempts', 'locked_at', 'active'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements OAuthenticatable
 {
@@ -34,7 +34,14 @@ class User extends Authenticatable implements OAuthenticatable
             'two_factor_confirmed_at' => 'datetime',
             'email_mfa_enabled' => 'boolean',
             'is_need_password_reset' => 'boolean',
+            'locked_at' => 'datetime',
+            'active' => 'boolean',
         ];
+    }
+
+    public function isLocked(): bool
+    {
+        return $this->locked_at !== null;
     }
 
     public function sessions(): HasMany

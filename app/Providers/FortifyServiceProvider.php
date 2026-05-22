@@ -136,15 +136,40 @@ class FortifyServiceProvider extends ServiceProvider
             session([
                 'url.intended' => session()->get('url.intended') ?? route('dashboard'),
             ]);
+
             $ldapUser = $this->ldapAuthenticate($request->input(Fortify::username()), $request->password);
             if ($ldapUser instanceof User) {
+                if ($ldapUser->isLocked() || ! $ldapUser->active) {
+                    return null;
+                }
+                $ldapUser->update(['failed_login_attempts' => 0]);
+
                 return $ldapUser;
             }
 
             $user = User::where(Fortify::username(), $request->input(Fortify::username()))->first();
-            if ($user && Hash::check($request->password, $user->password)) {
+
+            if (! $user) {
+                return null;
+            }
+
+            if ($user->isLocked() || ! $user->active) {
+                return null;
+            }
+
+            if (Hash::check($request->password, $user->password)) {
+                $user->update(['failed_login_attempts' => 0]);
+
                 return $user;
             }
+
+            $attempts = $user->failed_login_attempts + 1;
+            $user->update([
+                'failed_login_attempts' => $attempts,
+                'locked_at' => $attempts >= 3 ? now() : null,
+            ]);
+
+            return null;
         });
     }
 

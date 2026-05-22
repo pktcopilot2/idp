@@ -7,4 +7,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('users', [App\Http\Controllers\UserController::class, 'index'])->name('users.index');
     Route::delete('users/{user}/sessions', [App\Http\Controllers\UserController::class, 'destroySessions'])->name('users.sessions.destroy');
+    Route::patch('users/{user}/unlock', [App\Http\Controllers\UserController::class, 'unlock'])->name('users.unlock');
+    Route::patch('users/{user}/toggle-active', [App\Http\Controllers\UserController::class, 'toggleActive'])->name('users.toggle-active');
 });
