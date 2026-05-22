@@ -27,10 +27,12 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'k236615@pupukkaltim.com',
         // ]);
 
-        User::factory()->create([
-            'name' => 'Lixie',
-            'username' => 'k23661501',
-            'email' => 'k23661501@pupukkaltim.com',
-        ]);
+        // User::factory()->create([
+        //     'name' => 'Lixie',
+        //     'username' => 'k23661501',
+        //     'email' => 'k23661501@pupukkaltim.com',
+        // ]);
+
+        User::factory(50)->create();
     }
 }

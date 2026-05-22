@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Form, Head, Link } from '@inertiajs/vue3';
-import { Globe, Lock, LockOpen, Monitor, MonitorX, MoreHorizontal, Smartphone, UserCheck, UserX, X } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { Form, Head, router } from '@inertiajs/vue3';
+import { useDebounceFn } from '@vueuse/core';
+import { ArrowUpDown, ChevronDown, ChevronUp, Globe, Lock, LockOpen, Monitor, MonitorX, MoreHorizontal, Search, Smartphone, UserCheck, UserX } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
 import UserController from '@/actions/App/Http/Controllers/UserController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,14 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Sheet,
     SheetContent,
@@ -57,8 +66,16 @@ type PaginatedUsers = {
     total: number;
 };
 
-defineProps<{
+type Filters = {
+    search: string;
+    per_page: string;
+    sort: string;
+    direction: 'asc' | 'desc';
+};
+
+const props = defineProps<{
     users: PaginatedUsers;
+    filters: Filters;
 }>();
 
 defineOptions({
@@ -72,7 +89,36 @@ defineOptions({
     },
 });
 
+const search = ref(props.filters.search);
+const perPage = ref(props.filters.per_page);
+const sortBy = ref(props.filters.sort);
+const sortDir = ref<'asc' | 'desc'>(props.filters.direction);
 const selectedUser = ref<User | null>(null);
+
+function navigate() {
+    router.get(index(), {
+        search: search.value || undefined,
+        per_page: perPage.value !== '20' ? perPage.value : undefined,
+        sort: sortBy.value !== 'name' ? sortBy.value : undefined,
+        direction: sortDir.value !== 'asc' ? sortDir.value : undefined,
+    }, { preserveState: true, replace: true });
+}
+
+const debouncedNavigate = useDebounceFn(navigate, 400);
+
+watch(search, () => debouncedNavigate());
+
+watch(perPage, () => navigate());
+
+function toggleSort(column: string) {
+    if (sortBy.value === column) {
+        sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortBy.value = column;
+        sortDir.value = 'asc';
+    }
+    navigate();
+}
 
 function openSessions(user: User) {
     selectedUser.value = user;
@@ -116,34 +162,63 @@ function getSessionClients(session: UserSession): string[] {
 <template>
     <Head title="Users" />
 
-    <div class="space-y-4">
-        <div class="rounded-md border">
+    <div class="space-y-4 p-1">
+        <!-- Toolbar: search + per-page -->
+        <div class="flex flex-wrap items-center gap-2">
+            <div class="relative flex-1 min-w-48 max-w-sm">
+                <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                    v-model="search"
+                    placeholder="Search by name, email, or username…"
+                    class="pl-9"
+                />
+            </div>
+            <Select v-model="perPage">
+                <SelectTrigger class="w-32">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="10">10 / page</SelectItem>
+                    <SelectItem value="20">20 / page</SelectItem>
+                    <SelectItem value="50">50 / page</SelectItem>
+                    <SelectItem value="100">100 / page</SelectItem>
+                    <SelectItem value="all">Show all</SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
+
+        <div class="rounded-md border overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b bg-muted/50">
-                        <th
-                            class="px-4 py-3 text-left font-medium text-muted-foreground"
-                        >
-                            User
+                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">
+                            <button type="button" class="flex items-center gap-1 hover:text-foreground transition-colors" @click="toggleSort('name')">
+                                User
+                                <ChevronUp v-if="sortBy === 'name' && sortDir === 'asc'" class="h-3.5 w-3.5" />
+                                <ChevronDown v-else-if="sortBy === 'name' && sortDir === 'desc'" class="h-3.5 w-3.5" />
+                                <ArrowUpDown v-else class="h-3.5 w-3.5 opacity-40" />
+                            </button>
                         </th>
-                        <th
-                            class="px-4 py-3 text-left font-medium text-muted-foreground"
-                        >
-                            Username
+                        <th class="hidden sm:table-cell px-4 py-3 text-left font-medium text-muted-foreground">
+                            <button type="button" class="flex items-center gap-1 hover:text-foreground transition-colors" @click="toggleSort('username')">
+                                Username
+                                <ChevronUp v-if="sortBy === 'username' && sortDir === 'asc'" class="h-3.5 w-3.5" />
+                                <ChevronDown v-else-if="sortBy === 'username' && sortDir === 'desc'" class="h-3.5 w-3.5" />
+                                <ArrowUpDown v-else class="h-3.5 w-3.5 opacity-40" />
+                            </button>
                         </th>
-                        <th
-                            class="px-4 py-3 text-left font-medium text-muted-foreground"
-                        >
+                        <th class="hidden md:table-cell px-4 py-3 text-left font-medium text-muted-foreground">
                             Status
                         </th>
-                        <th
-                            class="px-4 py-3 text-left font-medium text-muted-foreground"
-                        >
-                            Active sessions
+                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">
+                            <button type="button" class="flex items-center gap-1 hover:text-foreground transition-colors" @click="toggleSort('active_sessions_count')">
+                                Active sessions
+                                <ChevronUp v-if="sortBy === 'active_sessions_count' && sortDir === 'asc'" class="h-3.5 w-3.5" />
+                                <ChevronDown v-else-if="sortBy === 'active_sessions_count' && sortDir === 'desc'" class="h-3.5 w-3.5" />
+                                <ArrowUpDown v-else class="h-3.5 w-3.5 opacity-40" />
+                            </button>
                         </th>
-                        <th
-                            class="px-4 py-3 text-right font-medium text-muted-foreground"
-                        >
+                        <th class="px-4 py-3 text-right font-medium text-muted-foreground">
                             Actions
                         </th>
                     </tr>
@@ -152,7 +227,7 @@ function getSessionClients(session: UserSession): string[] {
                     <tr
                         v-for="user in users.data"
                         :key="user.id"
-                        class="border-b last:border-0"
+                        class="border-b last:border-0 hover:bg-muted/30 transition-colors"
                     >
                         <td class="px-4 py-3">
                             <div class="font-medium">{{ user.name }}</div>
@@ -160,10 +235,10 @@ function getSessionClients(session: UserSession): string[] {
                                 {{ user.email }}
                             </div>
                         </td>
-                        <td class="px-4 py-3 text-muted-foreground">
+                        <td class="hidden sm:table-cell px-4 py-3 text-muted-foreground">
                             {{ user.username }}
                         </td>
-                        <td class="px-4 py-3">
+                        <td class="hidden md:table-cell px-4 py-3">
                             <div class="flex flex-wrap gap-1">
                                 <Badge
                                     v-if="!user.active"
@@ -294,19 +369,16 @@ function getSessionClients(session: UserSession): string[] {
             </table>
         </div>
 
-        <div
-            v-if="users.links.length > 3"
-            class="flex items-center justify-between"
-        >
-            <p class="text-sm text-muted-foreground">
-                Showing {{ users.from }}–{{ users.to }} of
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-1">
+            <p class="text-sm text-muted-foreground text-center sm:text-left">
+                Showing {{ users.from ?? 0 }}–{{ users.to ?? 0 }} of
                 {{ users.total }} users
             </p>
-            <div class="flex gap-1">
-                <Link
+            <div v-if="users.links.length > 3" class="flex flex-wrap justify-center sm:justify-end gap-1">
+                <a
                     v-for="link in users.links"
                     :key="link.label"
-                    :href="link.url ?? ''"
+                    v-bind="link.url ? { href: link.url } : {}"
                     :class="[
                         'inline-flex h-8 min-w-8 items-center justify-center rounded-md border px-2 text-sm transition-colors',
                         link.active
@@ -316,7 +388,7 @@ function getSessionClients(session: UserSession): string[] {
                             ? 'cursor-not-allowed opacity-50'
                             : 'cursor-pointer',
                     ]"
-                    :preserve-scroll="true"
+                    @click.prevent="link.url && router.visit(link.url, { preserveScroll: true })"
                     v-html="link.label"
                 />
             </div>

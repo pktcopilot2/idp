@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Session;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,9 +14,21 @@ class UserController extends Controller
     /**
      * Display a listing of users with their active sessions.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $users = User::query()
+        $search = $request->input('search');
+        $perPage = $request->input('per_page', '20');
+
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        $allowedSorts = ['name', 'username', 'email', 'active_sessions_count'];
+        if (! in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+        $direction = $direction === 'desc' ? 'desc' : 'asc';
+
+        $query = User::query()
             ->with([
                 'sessions:id,user_id,ip_address,user_agent,last_activity',
                 'tokens' => fn ($q) => $q
@@ -26,11 +38,32 @@ class UserController extends Controller
                     ->select(['id', 'user_id', 'name', 'client_id']),
             ])
             ->withCount('sessions as active_sessions_count')
-            ->orderBy('name')
-            ->paginate(20)
-            ->withQueryString();
+            ->when($search, fn ($q) => $q->where(fn ($q) => $q
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhere('username', 'like', "%{$search}%")
+            ))
+            ->orderBy($sort, $direction);
+
+        if ($perPage === 'all') {
+            $collection = $query->get();
+            $count = $collection->count();
+            $users = new LengthAwarePaginator(
+                $collection, $count, $count ?: 1, 1,
+                ['path' => $request->url(), 'query' => $request->query()],
+            );
+        } else {
+            $users = $query->paginate(max(1, (int) $perPage))->withQueryString();
+        }
+
         return Inertia::render('users/Index', [
             'users' => $users,
+            'filters' => [
+                'search' => $search ?? '',
+                'per_page' => $perPage,
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
         ]);
     }
 
