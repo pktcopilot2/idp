@@ -1,10 +1,30 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
-import { MonitorX } from 'lucide-vue-next';
+import { Globe, Monitor, MonitorX, Smartphone, X } from 'lucide-vue-next';
+import { ref } from 'vue';
 import UserController from '@/actions/App/Http/Controllers/UserController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
 import { index } from '@/routes/users';
+
+type UserToken = {
+    name: string; // session ID
+    client: { id: number; name: string } | null;
+};
+
+type UserSession = {
+    id: string;
+    ip_address: string | null;
+    user_agent: string | null;
+    last_activity: number;
+};
 
 type User = {
     id: number;
@@ -14,6 +34,8 @@ type User = {
     email_mfa_enabled: boolean;
     is_need_password_reset: boolean;
     active_sessions_count: number;
+    sessions: UserSession[];
+    tokens: UserToken[];
 };
 
 type PaginatedUsers = {
@@ -38,6 +60,46 @@ defineOptions({
         ],
     },
 });
+
+const selectedUser = ref<User | null>(null);
+
+function openSessions(user: User) {
+    selectedUser.value = user;
+}
+
+function formatLastActivity(timestamp: number): string {
+    const diffMs = Date.now() - timestamp * 1000;
+    const diffMins = Math.floor(diffMs / 60_000);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${Math.floor(diffHours / 24)}d ago`;
+}
+
+function parseBrowser(ua: string | null): string {
+    if (!ua) return 'Unknown';
+    if (ua.includes('Edg/')) return 'Microsoft Edge';
+    if (ua.includes('OPR/') || ua.includes('Opera/')) return 'Opera';
+    if (ua.includes('Chrome/')) return 'Chrome';
+    if (ua.includes('Firefox/')) return 'Firefox';
+    if (ua.includes('Safari/')) return 'Safari';
+    if (ua.includes('curl/')) return 'curl';
+    return 'Unknown browser';
+}
+
+function parseDevice(ua: string | null): 'mobile' | 'desktop' {
+    if (!ua) return 'desktop';
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(ua) ? 'mobile' : 'desktop';
+}
+
+function getSessionClients(session: UserSession): string[] {
+    if (!selectedUser.value) return [];
+    const names = selectedUser.value.tokens
+        .filter((t) => t.name === session.id && t.client)
+        .map((t) => t.client!.name);
+    return [...new Set(names)];
+}
 </script>
 
 <template>
@@ -107,11 +169,18 @@ defineOptions({
                             </div>
                         </td>
                         <td class="px-4 py-3">
-                            <Badge
-                                :variant="
+                            <button
+                                type="button"
+                                :class="[
+                                    'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors',
                                     user.active_sessions_count > 0
-                                        ? 'default'
-                                        : 'outline'
+                                        ? 'bg-primary text-primary-foreground hover:bg-primary/80 cursor-pointer'
+                                        : 'border border-border bg-transparent text-foreground cursor-default',
+                                ]"
+                                :disabled="user.active_sessions_count === 0"
+                                @click="
+                                    user.active_sessions_count > 0 &&
+                                        openSessions(user)
                                 "
                             >
                                 {{ user.active_sessions_count }}
@@ -120,7 +189,7 @@ defineOptions({
                                         ? 'session'
                                         : 'sessions'
                                 }}
-                            </Badge>
+                            </button>
                         </td>
                         <td class="px-4 py-3 text-right">
                             <Form
@@ -140,7 +209,7 @@ defineOptions({
                                     class="text-destructive hover:text-destructive"
                                 >
                                     <MonitorX class="mr-1 h-4 w-4" />
-                                    Revoke sessions
+                                    Revoke all
                                 </Button>
                             </Form>
                         </td>
@@ -185,4 +254,113 @@ defineOptions({
             </div>
         </div>
     </div>
+
+    <!-- Session detail sheet -->
+    <Sheet
+        :open="selectedUser !== null"
+        @update:open="(v) => !v && (selectedUser = null)"
+    >
+        <SheetContent class="w-full sm:max-w-lg overflow-y-auto">
+            <SheetHeader>
+                <SheetTitle>Active sessions</SheetTitle>
+                <SheetDescription v-if="selectedUser">
+                    {{ selectedUser.name }} &middot;
+                    {{ selectedUser.email }}
+                </SheetDescription>
+            </SheetHeader>
+
+            <div v-if="selectedUser" class="mt-6 space-y-3">
+                <div
+                    v-if="selectedUser.sessions.length === 0"
+                    class="py-8 text-center text-sm text-muted-foreground"
+                >
+                    No active sessions.
+                </div>
+
+                <div
+                    v-for="session in selectedUser.sessions"
+                    :key="session.id"
+                    class="rounded-lg border p-4"
+                >
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-3">
+                            <div
+                                class="mt-0.5 flex-shrink-0 rounded-md bg-muted p-2"
+                            >
+                                <Smartphone
+                                    v-if="
+                                        parseDevice(session.user_agent) ===
+                                        'mobile'
+                                    "
+                                    class="h-4 w-4 text-muted-foreground"
+                                />
+                                <Monitor
+                                    v-else
+                                    class="h-4 w-4 text-muted-foreground"
+                                />
+                            </div>
+
+                            <div class="space-y-1 min-w-0">
+                                <div class="font-medium text-sm">
+                                    {{ parseBrowser(session.user_agent) }}
+                                </div>
+
+                                <div
+                                    class="flex items-center gap-1.5 text-xs text-muted-foreground"
+                                >
+                                    <Globe class="h-3 w-3 flex-shrink-0" />
+                                    <span>{{
+                                        session.ip_address ?? 'Unknown IP'
+                                    }}</span>
+                                    <span class="text-border">·</span>
+                                    <span>{{
+                                        formatLastActivity(session.last_activity)
+                                    }}</span>
+                                </div>
+
+                                <div
+                                    v-if="getSessionClients(session).length > 0"
+                                    class="flex flex-wrap gap-1"
+                                >
+                                    <span
+                                        v-for="client in getSessionClients(session)"
+                                        :key="client"
+                                        class="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                                    >
+                                        <Globe class="h-2.5 w-2.5 flex-shrink-0" />
+                                        {{ client }}
+                                    </span>
+                                </div>
+
+                                <p
+                                    class="text-xs text-muted-foreground/70 break-all leading-relaxed"
+                                >
+                                    {{ session.user_agent ?? '—' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <Form
+                    v-if="selectedUser.sessions.length > 0"
+                    v-bind="UserController.destroySessions.form(selectedUser)"
+                    @success="selectedUser = null"
+                    class="pt-2"
+                    #default="{ processing }"
+                >
+                    <Button
+                        type="submit"
+                        variant="destructive"
+                        class="w-full"
+                        :disabled="processing"
+                    >
+                        <MonitorX class="mr-2 h-4 w-4" />
+                        Revoke all sessions
+                    </Button>
+                </Form>
+            </div>
+        </SheetContent>
+    </Sheet>
 </template>
+
