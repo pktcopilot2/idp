@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Form, Head, router } from '@inertiajs/vue3';
 import { useDebounceFn } from '@vueuse/core';
-import { ArrowUpDown, ChevronDown, ChevronUp, Globe, Lock, LockOpen, Monitor, MonitorX, MoreHorizontal, Search, Smartphone, UserCheck, UserX } from 'lucide-vue-next';
+import { ArrowUpDown, ChevronDown, ChevronUp, Globe, Lock, LockOpen, Monitor, MonitorX, MoreHorizontal, Search, Smartphone, UserCheck, UserX, Users } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import UserController from '@/actions/App/Http/Controllers/UserController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,6 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import {
     Sheet,
     SheetContent,
@@ -43,6 +45,11 @@ type UserSession = {
     last_activity: number;
 };
 
+type OAuthClient = {
+    id: string;
+    name: string;
+};
+
 type User = {
     id: number;
     name: string;
@@ -56,6 +63,7 @@ type User = {
     active_sessions_count: number;
     sessions: UserSession[];
     tokens: UserToken[];
+    assigned_clients: { id: string }[];
 };
 
 type PaginatedUsers = {
@@ -75,6 +83,7 @@ type Filters = {
 
 const props = defineProps<{
     users: PaginatedUsers;
+    clients: OAuthClient[];
     filters: Filters;
 }>();
 
@@ -94,6 +103,39 @@ const perPage = ref(props.filters.per_page);
 const sortBy = ref(props.filters.sort);
 const sortDir = ref<'asc' | 'desc'>(props.filters.direction);
 const selectedUser = ref<User | null>(null);
+
+// Assign clients sheet
+const assignUser = ref<User | null>(null);
+const assignClientIds = ref<string[]>([]);
+const assignProcessing = ref(false);
+
+function openAssignClients(user: User) {
+    assignUser.value = user;
+    assignClientIds.value = user.assigned_clients.map((c) => c.id);
+}
+
+function toggleClient(clientId: string) {
+    const idx = assignClientIds.value.indexOf(clientId);
+    if (idx === -1) {
+        assignClientIds.value.push(clientId);
+    } else {
+        assignClientIds.value.splice(idx, 1);
+    }
+}
+
+function submitAssignClients() {
+    if (!assignUser.value) return;
+    assignProcessing.value = true;
+    router.put(
+        UserController.syncClients.url(assignUser.value),
+        { client_ids: assignClientIds.value },
+        {
+            preserveScroll: true,
+            onFinish: () => { assignProcessing.value = false; },
+            onSuccess: () => { assignUser.value = null; },
+        },
+    );
+}
 
 function navigate() {
     router.get(index(), {
@@ -353,6 +395,17 @@ function getSessionClients(session: UserSession): string[] {
                                             {{ user.active ? 'Deactivate' : 'Activate' }}
                                         </DropdownMenuItem>
                                     </Form>
+
+                                    <DropdownMenuSeparator />
+
+                                    <!-- Assign clients -->
+                                    <DropdownMenuItem
+                                        class="cursor-pointer"
+                                        @click="openAssignClients(user)"
+                                    >
+                                        <Users class="mr-2 h-4 w-4" />
+                                        Assign clients
+                                    </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </td>
@@ -499,6 +552,61 @@ function getSessionClients(session: UserSession): string[] {
                         Revoke all sessions
                     </Button>
                 </Form>
+            </div>
+        </SheetContent>
+    </Sheet>
+
+    <!-- Assign clients sheet -->
+    <Sheet
+        :open="assignUser !== null"
+        @update:open="(v) => !v && (assignUser = null)"
+    >
+        <SheetContent class="w-full sm:max-w-md flex flex-col">
+            <SheetHeader>
+                <SheetTitle>Assign clients</SheetTitle>
+                <SheetDescription v-if="assignUser">
+                    {{ assignUser.name }} &middot; {{ assignUser.email }}
+                </SheetDescription>
+            </SheetHeader>
+
+            <div v-if="assignUser" class="flex flex-col flex-1 min-h-0 mt-6 gap-4">
+                <!-- Client list -->
+                <div class="flex-1 overflow-y-auto space-y-1 pr-1">
+                    <p v-if="clients.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+                        No clients available.
+                    </p>
+
+                    <div
+                        v-for="client in clients"
+                        :key="client.id"
+                        class="flex items-center gap-3 rounded-md px-3 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer select-none"
+                        @click="toggleClient(client.id)"
+                    >
+                        <Checkbox
+                            :model-value="assignClientIds.includes(client.id)"
+                            @update:model-value="toggleClient(client.id)"
+                            @click.stop
+                        />
+                        <span class="flex-1 text-sm">{{ client.name }}</span>
+                    </div>
+                </div>
+
+                <Separator />
+
+                <!-- Footer actions -->
+                <div class="flex items-center justify-between gap-2 shrink-0">
+                    <p class="text-xs text-muted-foreground">
+                        {{ assignClientIds.length }} of {{ clients.length }} selected
+                    </p>
+                    <div class="flex gap-2">
+                        <Button variant="outline" @click="assignUser = null">
+                            Cancel
+                        </Button>
+                        <Button :disabled="assignProcessing" @click="submitAssignClients">
+                            Save
+                        </Button>
+                    </div>
+                </div>
             </div>
         </SheetContent>
     </Sheet>

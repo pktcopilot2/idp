@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -39,6 +40,26 @@ class User extends Authenticatable implements OAuthenticatable
         ];
     }
 
+    /**
+     * Get the accessors to append to the model's array form.
+     *
+     * @return array<int, string>
+     */
+    protected $appends = [
+        'aliases',
+    ];
+
+    // get from ldaphelper
+    public function getAliasesAttribute(): array
+    {
+        if (config('app.ldap.enabled') === false) {
+            return [];
+        }
+
+        $ldap = new \App\Helpers\LdapHelper();
+        return $ldap->getUserAliasesOrNull($this->username);
+    }
+
     public function isLocked(): bool
     {
         return $this->locked_at !== null;
@@ -47,5 +68,15 @@ class User extends Authenticatable implements OAuthenticatable
     public function sessions(): HasMany
     {
         return $this->hasMany(Session::class);
+    }
+
+    public function assignedClients(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            \App\Models\Passport\Client::class,
+            'client_user',
+            'user_id',
+            'client_id',
+        );
     }
 }

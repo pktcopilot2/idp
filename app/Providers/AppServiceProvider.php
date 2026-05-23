@@ -42,19 +42,36 @@ class AppServiceProvider extends ServiceProvider
     protected function configurePassport(): void
     {
         Passport::useClientModel(Client::class);
-        Passport::authorizationView(fn (array $params) => Inertia::render('oauth/Authorize', [
-            'client' => [
-                'id' => $params['client']->getKey(),
-                'name' => $params['client']->name,
-            ],
-            'user' => [
-                'name' => $params['user']->name,
-            ],
-            'scopes' => collect($params['scopes'])->map->toArray()->values(),
-            'authToken' => $params['authToken'],
-            'request' => $params['request']->all(),
-            'csrfToken' => csrf_token(),
-        ]));
+        // Passport::authorizationView(fn ($parameters) => Inertia::render('oauth/Authorize', [
+        //     'request' => $parameters['request'],
+        //     'authToken' => $parameters['authToken'],
+        //     'client' => $parameters['client'],
+        //     'user' => $parameters['user'],
+        //     'scopes' => $parameters['scopes'],
+        // ]));
+
+        Passport::authorizationView(function (array $params) {
+            // This callback is only reached when skipsAuthorization() returns false,
+            // meaning the user is not assigned to this client — deny access.
+            $redirectUri = $params['request']->query('redirect_uri')
+                ?? collect((array) $params['client']->redirect_uris)->first();
+
+            $state = $params['request']->query('state');
+
+            $query = http_build_query(array_filter([
+                'error' => 'access_denied',
+                'error_description' => 'You are not authorized to access this application.',
+                'state' => $state,
+            ]));
+
+            if ($redirectUri) {
+                $separator = str_contains($redirectUri, '?') ? '&' : '?';
+
+                return redirect($redirectUri.$separator.$query);
+            }
+
+            abort(403, 'You are not authorized to access this application.');
+        });
     }
 
     /**

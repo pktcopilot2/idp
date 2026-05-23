@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Passport\Client;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,6 +37,7 @@ class UserController extends Controller
                     ->whereNotNull('name')
                     ->where('revoked', false)
                     ->select(['id', 'user_id', 'name', 'client_id']),
+                'assignedClients:id',
             ])
             ->withCount('sessions as active_sessions_count')
             ->when($search, fn ($q) => $q->where(fn ($q) => $q
@@ -58,6 +60,7 @@ class UserController extends Controller
 
         return Inertia::render('users/Index', [
             'users' => $users,
+            'clients' => Client::where('revoked', false)->orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'search' => $search ?? '',
                 'per_page' => $perPage,
@@ -91,6 +94,23 @@ class UserController extends Controller
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$user->name}'s account has been unlocked."]);
+
+        return back();
+    }
+
+    /**
+     * Sync assigned OAuth clients for a user.
+     */
+    public function syncClients(User $user, Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'client_ids' => ['nullable', 'array'],
+            'client_ids.*' => ['uuid', 'exists:oauth_clients,id'],
+        ]);
+
+        $user->assignedClients()->sync($validated['client_ids'] ?? []);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Client assignments updated for {$user->name}."]);
 
         return back();
     }

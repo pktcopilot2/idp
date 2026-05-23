@@ -29,7 +29,7 @@ defineProps<{
             <div class="mb-6 text-center">
                 <h1 class="text-2xl font-semibold tracking-tight">Authorize Application</h1>
                 <p class="mt-2 text-sm text-muted-foreground">
-                    <strong>{{ client.name }}</strong> is requesting access to your account.
+                    <strong>{{ client?.name }}</strong> is requesting access to your account.
                 </p>
             </div>
 
