@@ -204,7 +204,7 @@ function getSessionClients(session: UserSession): string[] {
 <template>
     <Head title="Users" />
 
-    <div class="space-y-4 p-1">
+    <div class="space-y-4 p-4">
         <!-- Toolbar: search + per-page -->
         <div class="flex flex-wrap items-center gap-2">
             <div class="relative flex-1 min-w-48 max-w-sm">

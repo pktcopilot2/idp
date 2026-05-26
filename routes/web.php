@@ -1,6 +1,7 @@
 <?php
 
 use App\Helpers\LdapHelper;
+use App\Models\Passport\Client;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -15,15 +16,12 @@ Route::get('/test', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         $clients = auth()->user()->assignedClients()
-            ->select(['oauth_clients.id', 'oauth_clients.name', 'oauth_clients.redirect_uris'])
+            ->select(['oauth_clients.id', 'oauth_clients.name', 'oauth_clients.login_uri'])
             ->get()
             ->map(fn ($client) => [
                 'id' => $client->id,
                 'name' => $client->name,
-                // url change the last / to /redirect example /auth/passport/callback to /auth/passport/redirect
-                'url' => collect((array) $client->redirect_uris)
-                    ->map(fn ($uri) => rtrim(parse_url($uri, PHP_URL_SCHEME).'://'.parse_url($uri, PHP_URL_HOST), '/').'/redirect')
-                    ->first(),
+                'url' => $client->login_uri,
             ]);
 
         return inertia('Dashboard', ['clients' => $clients]);
