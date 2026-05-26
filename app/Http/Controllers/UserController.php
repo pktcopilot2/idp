@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Passport\Client;
 use App\Models\User;
+use App\Http\Requests\UpdateUserRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -126,5 +127,38 @@ class UserController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$user->name}'s account has been {$status}."]);
 
         return back();
+    }
+
+    /**
+     * Show the form for editing a user.
+     */
+    public function edit(User $user): Response
+    {
+        return Inertia::render('users/Edit', [
+            'user' => $user->only(['id', 'name', 'username', 'email', 'active', 'email_mfa_enabled', 'is_need_password_reset']),
+        ]);
+    }
+
+    /**
+     * Update the specified user.
+     */
+    public function update(UpdateUserRequest $request, User $user): RedirectResponse
+    {
+        $user->name = $request->name;
+        $user->username = $request->username;
+        $user->email = $request->email;
+        $user->active = $request->boolean('active');
+        $user->email_mfa_enabled = $request->boolean('email_mfa_enabled');
+        $user->is_need_password_reset = $request->boolean('is_need_password_reset');
+
+        if ($request->filled('password')) {
+            $user->password = $request->password;
+        }
+
+        $user->save();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "{$user->name} has been updated."]);
+
+        return redirect()->route('users.index');
     }
 }

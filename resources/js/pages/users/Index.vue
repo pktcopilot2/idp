@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Head, router } from '@inertiajs/vue3';
 import { useDebounceFn } from '@vueuse/core';
-import { ArrowUpDown, ChevronDown, ChevronUp, Globe, Lock, LockOpen, Monitor, MonitorX, MoreHorizontal, Search, Smartphone, UserCheck, UserX, Users } from 'lucide-vue-next';
+import { ArrowUpDown, ChevronDown, ChevronUp, Globe, Lock, LockOpen, Monitor, MonitorX, MoreHorizontal, Pencil, Search, Smartphone, UserCheck, UserX, Users } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import UserController from '@/actions/App/Http/Controllers/UserController';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +31,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
-import { index } from '@/routes/users';
+import { edit as editRoute, index } from '@/routes/users';
 
 type UserToken = {
     name: string; // session ID
@@ -342,6 +342,18 @@ function getSessionClients(session: UserSession): string[] {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+
+                                    <!-- Edit user -->
+                                    <DropdownMenuItem
+                                        as="a"
+                                        :href="editRoute(user).url"
+                                        class="cursor-pointer"
+                                    >
+                                        <Pencil class="mr-2 h-4 w-4" />
+                                        Edit user
+                                    </DropdownMenuItem>
+
                                     <DropdownMenuSeparator />
 
                                     <!-- Revoke sessions -->

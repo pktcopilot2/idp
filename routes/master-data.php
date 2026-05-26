@@ -11,6 +11,8 @@ Route::middleware(['auth'])->group(function () {
     Route::put('clients/{client}', [App\Http\Controllers\ClientController::class, 'update'])->name('clients.update');
 
     Route::get('users', [App\Http\Controllers\UserController::class, 'index'])->name('users.index');
+    Route::get('users/{user}/edit', [App\Http\Controllers\UserController::class, 'edit'])->name('users.edit');
+    Route::put('users/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('users.update');
     Route::delete('users/{user}/sessions', [App\Http\Controllers\UserController::class, 'destroySessions'])->name('users.sessions.destroy');
     Route::patch('users/{user}/unlock', [App\Http\Controllers\UserController::class, 'unlock'])->name('users.unlock');
     Route::patch('users/{user}/toggle-active', [App\Http\Controllers\UserController::class, 'toggleActive'])->name('users.toggle-active');
