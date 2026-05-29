@@ -130,6 +130,33 @@ class UserController extends Controller
     }
 
     /**
+     * Show the detail page for a user.
+     */
+    public function show(User $user): Response
+    {
+        $user->load([
+            'sessions:id,user_id,ip_address,user_agent,last_activity',
+            'tokens' => fn ($q) => $q
+                ->with('client:id,name')
+                ->whereNotNull('name')
+                ->where('revoked', false)
+                ->select(['id', 'user_id', 'name', 'client_id']),
+            'assignedClients:id,name,login_uri',
+        ]);
+
+        return Inertia::render('users/Show', [
+            'user' => array_merge(
+                $user->only(['id', 'name', 'username', 'email', 'active', 'email_mfa_enabled', 'is_need_password_reset', 'locked_at', 'failed_login_attempts', 'created_at']),
+                [
+                    'sessions' => $user->sessions,
+                    'tokens' => $user->tokens,
+                    'assigned_clients' => $user->assignedClients,
+                ],
+            ),
+        ]);
+    }
+
+    /**
      * Show the form for editing a user.
      */
     public function edit(User $user): Response

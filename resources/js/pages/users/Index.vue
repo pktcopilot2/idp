@@ -31,7 +31,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
-import { edit as editRoute, index } from '@/routes/users';
+import { edit as editRoute, index, show as showRoute } from '@/routes/users';
 
 type UserToken = {
     name: string; // session ID
@@ -272,10 +272,10 @@ function getSessionClients(session: UserSession): string[] {
                         class="border-b last:border-0 hover:bg-muted/30 transition-colors"
                     >
                         <td class="px-4 py-3">
-                            <div class="font-medium">{{ user.name }}</div>
-                            <div class="text-xs text-muted-foreground">
-                                {{ user.email }}
-                            </div>
+                            <a :href="showRoute(user).url" class="hover:opacity-80 transition-opacity">
+                                <div class="font-medium">{{ user.name }}</div>
+                                <div class="text-xs text-muted-foreground">{{ user.email }}</div>
+                            </a>
                         </td>
                         <td class="hidden sm:table-cell px-4 py-3 text-muted-foreground">
                             {{ user.username }}

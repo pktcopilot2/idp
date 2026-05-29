@@ -1,7 +1,5 @@
 <?php
 
-use App\Helpers\LdapHelper;
-use App\Models\Passport\Client;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -10,7 +8,8 @@ Route::inertia('/', 'Welcome', [
 ])->name('home');
 
 Route::get('/test', function () {
-    // ...
+    // $alias = LdapHelper::getAllUserAttributes('k12216');
+    // dd($alias);
 })->name('test');
 
 Route::middleware(['auth', 'verified'])->group(function () {
