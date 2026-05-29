@@ -56,6 +56,7 @@ type User = {
     username: string;
     email: string;
     email_mfa_enabled: boolean;
+    whatsapp_mfa_enabled: boolean;
     is_need_password_reset: boolean;
     active: boolean;
     locked_at: string | null;
@@ -301,6 +302,12 @@ function getSessionClients(session: UserSession): string[] {
                                     variant="secondary"
                                 >
                                     Email MFA
+                                </Badge>
+                                <Badge
+                                    v-if="user.whatsapp_mfa_enabled"
+                                    variant="secondary"
+                                >
+                                    WhatsApp MFA
                                 </Badge>
                                 <Badge
                                     v-if="user.is_need_password_reset"

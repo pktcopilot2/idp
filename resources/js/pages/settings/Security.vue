@@ -9,6 +9,7 @@ import PasswordInput from '@/components/PasswordInput.vue';
 import TwoFactorRecoveryCodes from '@/components/TwoFactorRecoveryCodes.vue';
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal.vue';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
 import { edit } from '@/routes/security';
@@ -19,6 +20,8 @@ type Props = {
     requiresConfirmation?: boolean;
     twoFactorEnabled?: boolean;
     emailMfaEnabled?: boolean;
+    whatsappMfaEnabled?: boolean;
+    whatsappNumber?: string | null;
     passwordRules: string;
 };
 
@@ -27,6 +30,8 @@ const props = withDefaults(defineProps<Props>(), {
     requiresConfirmation: false,
     twoFactorEnabled: false,
     emailMfaEnabled: false,
+    whatsappMfaEnabled: false,
+    whatsappNumber: null,
 });
 
 defineOptions({
@@ -223,6 +228,64 @@ onUnmounted(() => clearTwoFactorAuthData());
                     :disabled="processing"
                 >
                     Disable email MFA
+                </Button>
+            </Form>
+        </div>
+    </div>
+
+    <div class="space-y-6">
+        <Heading
+            variant="small"
+            title="WhatsApp MFA"
+            description="Receive a one-time verification code via WhatsApp each time you log in"
+        />
+
+        <div v-if="!whatsappMfaEnabled" class="flex flex-col items-start justify-start space-y-4">
+            <p class="text-sm text-muted-foreground">
+                When you enable WhatsApp MFA, a 6-digit verification code will be
+                sent to your WhatsApp number each time you sign in.
+            </p>
+
+            <Form
+                v-bind="SecurityController.enableWhatsappMfa.form()"
+                class="w-full max-w-sm space-y-4"
+                #default="{ errors, processing }"
+            >
+                <div class="grid gap-2">
+                    <Label for="whatsapp_number">WhatsApp number <span class="text-destructive">*</span></Label>
+                    <Input
+                        id="whatsapp_number"
+                        name="whatsapp_number"
+                        :default-value="whatsappNumber ?? ''"
+                        placeholder="628123456789"
+                        autocomplete="off"
+                        :class="{ 'border-destructive': errors.whatsapp_number }"
+                    />
+                    <InputError :message="errors.whatsapp_number" />
+                </div>
+                <Button type="submit" :disabled="processing">
+                    Enable WhatsApp MFA
+                </Button>
+            </Form>
+        </div>
+
+        <div v-else class="flex flex-col items-start justify-start space-y-4">
+            <p class="text-sm text-muted-foreground">
+                WhatsApp MFA is active. A 6-digit code will be sent to
+                <span class="font-medium text-foreground">{{ whatsappNumber }}</span>
+                each time you sign in.
+            </p>
+
+            <Form
+                v-bind="SecurityController.disableWhatsappMfa.form()"
+                #default="{ processing }"
+            >
+                <Button
+                    variant="destructive"
+                    type="submit"
+                    :disabled="processing"
+                >
+                    Disable WhatsApp MFA
                 </Button>
             </Form>
         </div>

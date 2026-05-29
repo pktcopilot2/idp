@@ -23,6 +23,8 @@ class UpdateUserRequest extends FormRequest
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user)],
             'active' => ['boolean'],
             'email_mfa_enabled' => ['boolean'],
+            'whatsapp_mfa_enabled' => ['boolean'],
+            'whatsapp_number' => ['nullable', 'string', 'max:30', Rule::requiredIf(fn () => $this->boolean('whatsapp_mfa_enabled'))],
             'is_need_password_reset' => ['boolean'],
             'password' => ['nullable', 'string', Password::default(), 'confirmed'],
             'password_confirmation' => ['nullable', 'string'],

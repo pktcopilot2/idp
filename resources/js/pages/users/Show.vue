@@ -33,6 +33,8 @@ type UserDetail = {
     email: string;
     active: boolean;
     email_mfa_enabled: boolean;
+    whatsapp_mfa_enabled: boolean;
+    whatsapp_number: string | null;
     is_need_password_reset: boolean;
     locked_at: string | null;
     failed_login_attempts: number;
@@ -170,6 +172,9 @@ function getSessionClients(session: UserSession): string[] {
                         <Badge v-if="user.email_mfa_enabled" variant="secondary">
                             Email MFA
                         </Badge>
+                        <Badge v-if="user.whatsapp_mfa_enabled" variant="secondary">
+                            WhatsApp MFA
+                        </Badge>
                         <Badge v-if="user.is_need_password_reset" variant="destructive">
                             Password reset required
                         </Badge>
@@ -217,6 +222,14 @@ function getSessionClients(session: UserSession): string[] {
                         <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Failed login attempts</p>
                         <p class="mt-0.5 text-sm" :class="user.failed_login_attempts > 0 ? 'text-destructive font-medium' : ''">
                             {{ user.failed_login_attempts }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">WhatsApp number</p>
+                        <p class="mt-0.5 text-sm">
+                            <span v-if="user.whatsapp_number">{{ user.whatsapp_number }}</span>
+                            <span v-else class="text-muted-foreground italic">Not set</span>
                         </p>
                     </div>
 

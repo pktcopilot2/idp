@@ -36,6 +36,8 @@ class SecurityController extends Controller implements HasMiddleware
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
             'emailMfaEnabled' => (bool) $request->user()->email_mfa_enabled,
+            'whatsappMfaEnabled' => (bool) $request->user()->whatsapp_mfa_enabled,
+            'whatsappNumber' => $request->user()->whatsapp_number,
         ];
 
         if (Features::canManageTwoFactorAuthentication()) {
@@ -82,6 +84,37 @@ class SecurityController extends Controller implements HasMiddleware
         $request->user()->update(['email_mfa_enabled' => false]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Email MFA disabled.')]);
+
+        return back();
+    }
+
+    /**
+     * Enable WhatsApp MFA for the user.
+     */
+    public function enableWhatsappMfa(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'whatsapp_number' => ['required', 'string', 'max:30'],
+        ]);
+
+        $request->user()->update([
+            'whatsapp_mfa_enabled' => true,
+            'whatsapp_number' => $request->whatsapp_number,
+        ]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('WhatsApp MFA enabled.')]);
+
+        return back();
+    }
+
+    /**
+     * Disable WhatsApp MFA for the user.
+     */
+    public function disableWhatsappMfa(Request $request): RedirectResponse
+    {
+        $request->user()->update(['whatsapp_mfa_enabled' => false]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('WhatsApp MFA disabled.')]);
 
         return back();
     }

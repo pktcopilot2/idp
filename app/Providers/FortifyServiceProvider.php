@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\RedirectIfEmailMfaRequired;
+use App\Actions\Fortify\RedirectIfWhatsappMfaRequired;
 use App\Actions\Fortify\RedirectIfPasswordResetRequired;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\TwoFactorLoginResponse;
@@ -108,6 +109,10 @@ class FortifyServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($request->session()->get('email_mfa.id'));
         });
 
+        RateLimiter::for('whatsapp-mfa', function (Request $request) {
+            return Limit::perMinute(5)->by($request->session()->get('whatsapp_mfa.id'));
+        });
+
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
@@ -126,6 +131,7 @@ class FortifyServiceProvider extends ServiceProvider
                 config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
                 Features::enabled(Features::twoFactorAuthentication()) ? RedirectsIfTwoFactorAuthenticatable::class : null,
                 RedirectIfPasswordResetRequired::class,
+                RedirectIfWhatsappMfaRequired::class,
                 RedirectIfEmailMfaRequired::class,
                 AttemptToAuthenticate::class,
                 PrepareAuthenticatedSession::class,

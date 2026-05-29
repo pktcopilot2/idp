@@ -18,6 +18,8 @@ type UserData = {
     email: string;
     active: boolean;
     email_mfa_enabled: boolean;
+    whatsapp_mfa_enabled: boolean;
+    whatsapp_number: string | null;
     is_need_password_reset: boolean;
 };
 
@@ -40,6 +42,8 @@ const form = useForm({
     email: props.user.email,
     active: props.user.active,
     email_mfa_enabled: props.user.email_mfa_enabled,
+    whatsapp_mfa_enabled: props.user.whatsapp_mfa_enabled,
+    whatsapp_number: props.user.whatsapp_number ?? '',
     is_need_password_reset: props.user.is_need_password_reset,
     password: '',
     password_confirmation: '',
@@ -141,6 +145,37 @@ function submit() {
                             <p class="text-sm text-muted-foreground">
                                 Require a one-time code sent to the user's email on each login.
                             </p>
+                        </div>
+                    </div>
+
+                    <!-- WhatsApp MFA -->
+                    <div class="space-y-3 rounded-lg border p-4">
+                        <div class="flex items-start gap-3">
+                            <Checkbox
+                                id="whatsapp_mfa_enabled"
+                                :model-value="form.whatsapp_mfa_enabled"
+                                class="mt-0.5"
+                                @update:model-value="form.whatsapp_mfa_enabled = !!$event"
+                            />
+                            <div class="space-y-0.5">
+                                <Label for="whatsapp_mfa_enabled" class="font-medium cursor-pointer">WhatsApp MFA</Label>
+                                <p class="text-sm text-muted-foreground">
+                                    Require a one-time code sent via WhatsApp on each login.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label for="whatsapp_number">WhatsApp number <span v-if="form.whatsapp_mfa_enabled" class="text-destructive">*</span></Label>
+                            <Input
+                                id="whatsapp_number"
+                                v-model="form.whatsapp_number"
+                                placeholder="628123456789"
+                                autocomplete="off"
+                                :disabled="!form.whatsapp_mfa_enabled"
+                                :class="{ 'border-destructive': form.errors.whatsapp_number }"
+                            />
+                            <InputError :message="form.errors.whatsapp_number" />
                         </div>
                     </div>
 

@@ -146,7 +146,7 @@ class UserController extends Controller
 
         return Inertia::render('users/Show', [
             'user' => array_merge(
-                $user->only(['id', 'name', 'username', 'email', 'active', 'email_mfa_enabled', 'is_need_password_reset', 'locked_at', 'failed_login_attempts', 'created_at']),
+                $user->only(['id', 'name', 'username', 'email', 'active', 'email_mfa_enabled', 'whatsapp_mfa_enabled', 'whatsapp_number', 'is_need_password_reset', 'locked_at', 'failed_login_attempts', 'created_at']),
                 [
                     'sessions' => $user->sessions,
                     'tokens' => $user->tokens,
@@ -162,7 +162,7 @@ class UserController extends Controller
     public function edit(User $user): Response
     {
         return Inertia::render('users/Edit', [
-            'user' => $user->only(['id', 'name', 'username', 'email', 'active', 'email_mfa_enabled', 'is_need_password_reset']),
+            'user' => $user->only(['id', 'name', 'username', 'email', 'active', 'email_mfa_enabled', 'whatsapp_mfa_enabled', 'whatsapp_number', 'is_need_password_reset']),
         ]);
     }
 
@@ -176,6 +176,10 @@ class UserController extends Controller
         $user->email = $request->email;
         $user->active = $request->boolean('active');
         $user->email_mfa_enabled = $request->boolean('email_mfa_enabled');
+        $user->whatsapp_mfa_enabled = $request->boolean('whatsapp_mfa_enabled');
+        if ($request->has('whatsapp_number')) {
+            $user->whatsapp_number = $request->filled('whatsapp_number') ? $request->string('whatsapp_number')->toString() : null;
+        }
         $user->is_need_password_reset = $request->boolean('is_need_password_reset');
 
         if ($request->filled('password')) {

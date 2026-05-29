@@ -8,8 +8,36 @@ Route::inertia('/', 'Welcome', [
 ])->name('home');
 
 Route::get('/test', function () {
-    // $alias = LdapHelper::getAllUserAttributes('k12216');
-    // dd($alias);
+    $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $response = \Illuminate\Support\Facades\Http::withHeader('X-API-Key', config('services.whatsapp_mfa.api_key'))
+        ->acceptJson()
+        ->timeout(10)
+        ->post(config('services.whatsapp_mfa.endpoint'), [
+            'platform_id' => config('services.whatsapp_mfa.platform_id'),
+            'external_id' => config('services.whatsapp_mfa.external_id'),
+            'template_id' => config('services.whatsapp_mfa.template_id'),
+            'header_media_url' => null,
+            'callback_url' => null,
+            'metadata' => [],
+            'recipient' => [
+                'type' => 'npk',
+                'value' => 'k236615',
+            ],
+            'body_params' => [
+                [
+                    'model' => 1,
+                    'value' => 'Eky',
+                    'param_type' => 'body',
+                ],
+                [
+                    'model' => 2,
+                    'value' => $code,
+                    'param_type' => 'body',
+                ],
+            ],
+        ]);
+
+    return $response->json();
 })->name('test');
 
 Route::middleware(['auth', 'verified'])->group(function () {

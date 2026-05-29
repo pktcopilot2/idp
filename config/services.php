@@ -52,4 +52,12 @@ return [
         'logout_url' => env('FUSIONAUTH_BASE_URL').'/oauth2/logout?client_id='.env('FUSIONAUTH_CLIENT_ID').'&tenantId='.env('FUSIONAUTH_TENANT_ID').'&post_logout_redirect_uri='.env('APP_URL').'/login',
     ],
 
+    'whatsapp_mfa' => [
+        'endpoint' => env('WHATSAPP_MFA_ENDPOINT'),
+        'api_key' => env('WHATSAPP_MFA_API_KEY'),
+        'platform_id' => env('WHATSAPP_MFA_PLATFORM_ID'),
+        'external_id' => 'idp-'.str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT),
+        'template_id' => env('WHATSAPP_MFA_TEMPLATE_ID'),
+    ],
+
 ];
