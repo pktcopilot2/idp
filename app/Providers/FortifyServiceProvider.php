@@ -7,6 +7,9 @@ use App\Actions\Fortify\RedirectIfEmailMfaRequired;
 use App\Actions\Fortify\RedirectIfWhatsappMfaRequired;
 use App\Actions\Fortify\RedirectIfPasswordResetRequired;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Features\EmailMfa;
+use App\Features\TwoFactorAuthentication as TwoFactorAuthenticationFeature;
+use App\Features\WhatsAppMfa;
 use App\Http\Responses\TwoFactorLoginResponse;
 use App\Models\User;
 use Laravel\Fortify\Actions\AttemptToAuthenticate;
@@ -25,6 +28,7 @@ use Inertia\Inertia;
 use Laravel\Fortify\Contracts\TwoFactorLoginResponse as TwoFactorLoginResponseContract;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
+use Laravel\Pennant\Feature;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -128,10 +132,12 @@ class FortifyServiceProvider extends ServiceProvider
             return [
                 config('fortify.limiters.login') ? null : EnsureLoginIsNotThrottled::class,
                 config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
-                Features::enabled(Features::twoFactorAuthentication()) ? RedirectsIfTwoFactorAuthenticatable::class : null,
+                Features::enabled(Features::twoFactorAuthentication()) && Feature::for(null)->active(TwoFactorAuthenticationFeature::class)
+                    ? RedirectsIfTwoFactorAuthenticatable::class
+                    : null,
                 RedirectIfPasswordResetRequired::class,
-                RedirectIfWhatsappMfaRequired::class,
-                RedirectIfEmailMfaRequired::class,
+                Feature::for(null)->active(WhatsAppMfa::class) ? RedirectIfWhatsappMfaRequired::class : null,
+                Feature::for(null)->active(EmailMfa::class) ? RedirectIfEmailMfaRequired::class : null,
                 AttemptToAuthenticate::class,
                 PrepareAuthenticatedSession::class,
             ];

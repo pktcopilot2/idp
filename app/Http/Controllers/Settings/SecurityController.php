@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Features\EmailMfa;
+use App\Features\TwoFactorAuthentication as TwoFactorAuthenticationFeature;
+use App\Features\WhatsAppMfa;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
@@ -16,6 +19,7 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Laravel\Fortify\Features;
+use Laravel\Pennant\Feature;
 
 class SecurityController extends Controller implements HasMiddleware
 {
@@ -36,7 +40,10 @@ class SecurityController extends Controller implements HasMiddleware
     public function edit(TwoFactorAuthenticationRequest $request): Response
     {
         $props = [
-            'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
+            'canManageTwoFactor' => Features::canManageTwoFactorAuthentication()
+                && Feature::for(null)->active(TwoFactorAuthenticationFeature::class),
+            'emailMfaFeatureEnabled' => Feature::for(null)->active(EmailMfa::class),
+            'whatsappMfaFeatureEnabled' => Feature::for(null)->active(WhatsAppMfa::class),
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
             'emailMfaEnabled' => (bool) $request->user()->email_mfa_enabled,
             'emailMfaSetupPending' => $request->session()->get('email_mfa_setup.id') === $request->user()->getKey(),
@@ -44,7 +51,8 @@ class SecurityController extends Controller implements HasMiddleware
             'whatsappNumber' => $request->user()->whatsapp_number,
         ];
 
-        if (Features::canManageTwoFactorAuthentication()) {
+        if (Features::canManageTwoFactorAuthentication()
+            && Feature::for(null)->active(TwoFactorAuthenticationFeature::class)) {
             $request->ensureStateIsValid();
 
             $props['twoFactorEnabled'] = $request->user()->hasEnabledTwoFactorAuthentication();
@@ -73,6 +81,8 @@ class SecurityController extends Controller implements HasMiddleware
      */
     public function initiateEmailMfa(Request $request): RedirectResponse
     {
+        abort_unless(Feature::for(null)->active(EmailMfa::class), 403);
+
         $user = $request->user();
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
@@ -91,6 +101,8 @@ class SecurityController extends Controller implements HasMiddleware
      */
     public function enableEmailMfa(Request $request): RedirectResponse
     {
+        abort_unless(Feature::for(null)->active(EmailMfa::class), 403);
+
         $request->validate(['code' => ['required', 'string', 'size:6']]);
 
         $user = $request->user();
@@ -123,6 +135,8 @@ class SecurityController extends Controller implements HasMiddleware
      */
     public function disableEmailMfa(Request $request): RedirectResponse
     {
+        abort_unless(Feature::for(null)->active(EmailMfa::class), 403);
+
         $request->user()->update(['email_mfa_enabled' => false]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Email MFA disabled.')]);
@@ -135,6 +149,8 @@ class SecurityController extends Controller implements HasMiddleware
      */
     public function enableWhatsappMfa(Request $request): RedirectResponse
     {
+        abort_unless(Feature::for(null)->active(WhatsAppMfa::class), 403);
+
         $request->validate([
             'whatsapp_number' => ['required', 'string', 'max:30'],
         ]);
@@ -154,6 +170,8 @@ class SecurityController extends Controller implements HasMiddleware
      */
     public function disableWhatsappMfa(Request $request): RedirectResponse
     {
+        abort_unless(Feature::for(null)->active(WhatsAppMfa::class), 403);
+
         $request->user()->update(['whatsapp_mfa_enabled' => false]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('WhatsApp MFA disabled.')]);

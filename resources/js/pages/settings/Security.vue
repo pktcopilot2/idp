@@ -27,8 +27,10 @@ type Props = {
     canManageTwoFactor?: boolean;
     requiresConfirmation?: boolean;
     twoFactorEnabled?: boolean;
+    emailMfaFeatureEnabled?: boolean;
     emailMfaEnabled?: boolean;
     emailMfaSetupPending?: boolean;
+    whatsappMfaFeatureEnabled?: boolean;
     whatsappMfaEnabled?: boolean;
     whatsappNumber?: string | null;
     passwordRules: string;
@@ -38,8 +40,10 @@ const props = withDefaults(defineProps<Props>(), {
     canManageTwoFactor: false,
     requiresConfirmation: false,
     twoFactorEnabled: false,
+    emailMfaFeatureEnabled: false,
     emailMfaEnabled: false,
     emailMfaSetupPending: false,
+    whatsappMfaFeatureEnabled: false,
     whatsappMfaEnabled: false,
     whatsappNumber: null,
 });
@@ -205,7 +209,7 @@ onUnmounted(() => clearTwoFactorAuthData());
         />
     </div>
 
-    <div class="space-y-6">
+    <div v-if="emailMfaFeatureEnabled" class="space-y-6">
         <Heading
             variant="small"
             title="Email MFA"
@@ -299,7 +303,7 @@ onUnmounted(() => clearTwoFactorAuthData());
         </Dialog>
     </div>
 
-    <div class="space-y-6">
+    <div v-if="whatsappMfaFeatureEnabled" class="space-y-6">
         <Heading
             variant="small"
             title="WhatsApp MFA"
