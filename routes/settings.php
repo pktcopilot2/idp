@@ -20,6 +20,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('user-password.update');
 
+    Route::post('settings/security/email-mfa/initiate', [SecurityController::class, 'initiateEmailMfa'])->name('security.email-mfa.initiate')->middleware('throttle:5,10');
     Route::post('settings/security/email-mfa', [SecurityController::class, 'enableEmailMfa'])->name('security.email-mfa.enable');
     Route::delete('settings/security/email-mfa', [SecurityController::class, 'disableEmailMfa'])->name('security.email-mfa.disable');
 

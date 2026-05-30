@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
+use App\Notifications\EmailMfaCode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Laravel\Fortify\Features;
@@ -36,6 +39,7 @@ class SecurityController extends Controller implements HasMiddleware
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
             'emailMfaEnabled' => (bool) $request->user()->email_mfa_enabled,
+            'emailMfaSetupPending' => $request->session()->get('email_mfa_setup.id') === $request->user()->getKey(),
             'whatsappMfaEnabled' => (bool) $request->user()->whatsapp_mfa_enabled,
             'whatsappNumber' => $request->user()->whatsapp_number,
         ];
@@ -65,11 +69,49 @@ class SecurityController extends Controller implements HasMiddleware
     }
 
     /**
-     * Enable email MFA for the user.
+     * Send a verification code to confirm email MFA setup.
+     */
+    public function initiateEmailMfa(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        Cache::put("email_mfa_setup:{$user->getKey()}", $code, now()->addMinutes(10));
+        $request->session()->put('email_mfa_setup.id', $user->getKey());
+
+        $user->notify(new EmailMfaCode($code));
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('A verification code has been sent to your email.')]);
+
+        return back();
+    }
+
+    /**
+     * Confirm the verification code and enable email MFA.
      */
     public function enableEmailMfa(Request $request): RedirectResponse
     {
-        $request->user()->update(['email_mfa_enabled' => true]);
+        $request->validate(['code' => ['required', 'string', 'size:6']]);
+
+        $user = $request->user();
+        $sessionId = $request->session()->get('email_mfa_setup.id');
+
+        if ($sessionId !== $user->getKey()) {
+            return redirect()->route('security.edit');
+        }
+
+        $cachedCode = Cache::get("email_mfa_setup:{$user->getKey()}");
+
+        if (! $cachedCode || ! hash_equals($cachedCode, $request->input('code'))) {
+            throw ValidationException::withMessages([
+                'code' => [__('The provided verification code is invalid.')],
+            ]);
+        }
+
+        Cache::forget("email_mfa_setup:{$user->getKey()}");
+        $request->session()->forget('email_mfa_setup.id');
+
+        $user->update(['email_mfa_enabled' => true]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Email MFA enabled.')]);
 

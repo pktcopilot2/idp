@@ -25,7 +25,6 @@ use Inertia\Inertia;
 use Laravel\Fortify\Contracts\TwoFactorLoginResponse as TwoFactorLoginResponseContract;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
-use Laravel\Socialite\Socialite;
 
 class FortifyServiceProvider extends ServiceProvider
 {

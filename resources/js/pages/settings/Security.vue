@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import { ShieldCheck } from 'lucide-vue-next';
-import { onUnmounted, ref } from 'vue';
+import { onUnmounted, ref, watch } from 'vue';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -9,6 +9,14 @@ import PasswordInput from '@/components/PasswordInput.vue';
 import TwoFactorRecoveryCodes from '@/components/TwoFactorRecoveryCodes.vue';
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
@@ -20,6 +28,7 @@ type Props = {
     requiresConfirmation?: boolean;
     twoFactorEnabled?: boolean;
     emailMfaEnabled?: boolean;
+    emailMfaSetupPending?: boolean;
     whatsappMfaEnabled?: boolean;
     whatsappNumber?: string | null;
     passwordRules: string;
@@ -30,6 +39,7 @@ const props = withDefaults(defineProps<Props>(), {
     requiresConfirmation: false,
     twoFactorEnabled: false,
     emailMfaEnabled: false,
+    emailMfaSetupPending: false,
     whatsappMfaEnabled: false,
     whatsappNumber: null,
 });
@@ -47,6 +57,12 @@ defineOptions({
 
 const { hasSetupData, clearTwoFactorAuthData } = useTwoFactorAuth();
 const showSetupModal = ref<boolean>(false);
+const showEmailMfaModal = ref<boolean>(props.emailMfaSetupPending);
+
+watch(
+    () => props.emailMfaSetupPending,
+    (val) => { showEmailMfaModal.value = val; },
+);
 
 onUnmounted(() => clearTwoFactorAuthData());
 </script>
@@ -203,7 +219,8 @@ onUnmounted(() => clearTwoFactorAuthData());
             </p>
 
             <Form
-                v-bind="SecurityController.enableEmailMfa.form()"
+                v-bind="SecurityController.initiateEmailMfa.form()"
+                @success="showEmailMfaModal = true"
                 #default="{ processing }"
             >
                 <Button type="submit" :disabled="processing">
@@ -231,6 +248,55 @@ onUnmounted(() => clearTwoFactorAuthData());
                 </Button>
             </Form>
         </div>
+
+        <Dialog :open="showEmailMfaModal" @update:open="showEmailMfaModal = $event">
+            <DialogContent class="sm:max-w-sm">
+                <DialogHeader>
+                    <DialogTitle>Verify your email</DialogTitle>
+                    <DialogDescription>
+                        A 6-digit verification code has been sent to your email
+                        address. Enter the code below to enable Email MFA.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <Form
+                    v-bind="SecurityController.enableEmailMfa.form()"
+                    class="space-y-4"
+                    #default="{ errors, processing }"
+                >
+                    <div class="grid gap-2">
+                        <Label for="email_mfa_code">Verification code</Label>
+                        <Input
+                            id="email_mfa_code"
+                            name="code"
+                            maxlength="6"
+                            placeholder="000000"
+                            autocomplete="one-time-code"
+                            :class="{ 'border-destructive': errors.code }"
+                        />
+                        <InputError :message="errors.code" />
+                    </div>
+
+                    <DialogFooter class="flex-col items-start gap-3 sm:flex-col sm:items-start">
+                        <Button type="submit" class="w-full" :disabled="processing">
+                            Verify &amp; Enable
+                        </Button>
+                        <Form
+                            v-bind="SecurityController.initiateEmailMfa.form()"
+                            #default="{ processing: resending }"
+                        >
+                            <button
+                                type="submit"
+                                :disabled="resending"
+                                class="text-sm text-muted-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current!"
+                            >
+                                Send a new code
+                            </button>
+                        </Form>
+                    </DialogFooter>
+                </Form>
+            </DialogContent>
+        </Dialog>
     </div>
 
     <div class="space-y-6">
