@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { AppWindow, BookOpen, FolderGit2, LayoutGrid, User } from 'lucide-vue-next';
+import { AppWindow, BookOpen, FolderGit2, LayoutGrid, ShieldAlert, User } from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -18,6 +18,7 @@ import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import clients from '@/routes/clients';
 import users from '@/routes/users';
+import features from '@/routes/features';
 
 const mainNavItems: NavItem[] = [
     {
@@ -38,6 +39,11 @@ const mainNavItems: NavItem[] = [
 ];
 
 const footerNavItems: NavItem[] = [
+    {
+        title: 'Features',
+        href: features.index(),
+        icon: ShieldAlert,
+    },
     {
         title: 'Repository',
         href: 'https://github.com/laravel/vue-starter-kit',

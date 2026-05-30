@@ -1,10 +1,7 @@
 <?php
 
-use App\Features\NewApi;
-use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
-use Laravel\Pennant\Feature;
 
 Route::inertia('/', 'Welcome', [
     'canRegister' => Features::enabled(Features::registration()),

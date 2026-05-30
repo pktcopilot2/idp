@@ -42,13 +42,6 @@ class AppServiceProvider extends ServiceProvider
     protected function configurePassport(): void
     {
         Passport::useClientModel(Client::class);
-        // Passport::authorizationView(fn ($parameters) => Inertia::render('oauth/Authorize', [
-        //     'request' => $parameters['request'],
-        //     'authToken' => $parameters['authToken'],
-        //     'client' => $parameters['client'],
-        //     'user' => $parameters['user'],
-        //     'scopes' => $parameters['scopes'],
-        // ]));
 
         Passport::authorizationView(function (array $params) {
             // This callback is only reached when skipsAuthorization() returns false,

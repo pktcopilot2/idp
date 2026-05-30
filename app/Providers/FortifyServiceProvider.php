@@ -19,6 +19,7 @@ use Laravel\Fortify\Actions\PrepareAuthenticatedSession;
 use Laravel\Fortify\Contracts\RedirectsIfTwoFactorAuthenticatable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -132,12 +133,10 @@ class FortifyServiceProvider extends ServiceProvider
             return [
                 config('fortify.limiters.login') ? null : EnsureLoginIsNotThrottled::class,
                 config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
-                Features::enabled(Features::twoFactorAuthentication()) && Feature::for(null)->active(TwoFactorAuthenticationFeature::class)
-                    ? RedirectsIfTwoFactorAuthenticatable::class
-                    : null,
                 RedirectIfPasswordResetRequired::class,
-                Feature::for(null)->active(WhatsAppMfa::class) ? RedirectIfWhatsappMfaRequired::class : null,
-                Feature::for(null)->active(EmailMfa::class) ? RedirectIfEmailMfaRequired::class : null,
+                Feature::for(Auth::user())->active(TwoFactorAuthenticationFeature::class) ? RedirectsIfTwoFactorAuthenticatable::class : null,
+                Feature::for(Auth::user())->active(WhatsAppMfa::class) ? RedirectIfWhatsappMfaRequired::class : null,
+                Feature::for(Auth::user())->active(EmailMfa::class) ? RedirectIfEmailMfaRequired::class : null,
                 AttemptToAuthenticate::class,
                 PrepareAuthenticatedSession::class,
             ];
