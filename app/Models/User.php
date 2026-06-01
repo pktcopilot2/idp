@@ -14,13 +14,14 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Passport\Contracts\OAuthenticatable;
 use Laravel\Passport\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'password', 'email_mfa_enabled', 'whatsapp_mfa_enabled', 'whatsapp_number', 'is_need_password_reset', 'failed_login_attempts', 'locked_at', 'active'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements OAuthenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasApiTokens;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasApiTokens, HasRoles;
 
     /**
      * Get the attributes that should be cast.

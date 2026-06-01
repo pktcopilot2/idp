@@ -27,13 +27,30 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'k236615@pupukkaltim.com',
         // ]);
 
-        User::factory()->create([
-            'name' => 'Arif',
-            'username' => 'k258008',
-            'email' => 'k258008@pupukkaltim.com',
-        ]);
+        // User::factory()->create([
+        //     'name' => 'Arif',
+        //     'username' => 'k258008',
+        //     'email' => 'k258008@pupukkaltim.com',
+        // ]);
 
         // User::factory(50)->create();
 
+        $user = User::query()->firstOrCreate([
+            'username' => 'admin',
+        ], [
+            'name' => 'Admin',
+            'email' => 'admin@example.com',
+            'password' => bcrypt('password'),
+        ]);
+        $user->assignRole('Superadmin');
+
+        $user = User::query()->firstOrCreate([
+            'username' => 'k236615',
+        ], [
+            'name' => 'Sallie Trixie Zebada Mansurina',
+            'email' => 'k236615@pupukkaltim.com',
+            'password' => bcrypt('password'),
+        ]);
+        $user->assignRole(['Superadmin', 'Viewer']);
     }
 }

@@ -42,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
     protected function configurePassport(): void
     {
         Passport::useClientModel(Client::class);
+        Passport::useAccessTokenEntity(\App\Bridge\AccessToken::class);
 
         Passport::authorizationView(function (array $params) {
             // This callback is only reached when skipsAuthorization() returns false,
