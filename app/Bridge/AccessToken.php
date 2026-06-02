@@ -9,6 +9,7 @@ use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Laravel\Passport\Bridge\AccessToken as BaseAccessToken;
 use League\OAuth2\Server\CryptKeyInterface;
+use Spatie\Permission\PermissionRegistrar;
 
 class AccessToken extends BaseAccessToken
 {
@@ -24,7 +25,7 @@ class AccessToken extends BaseAccessToken
     }
 
     /**
-     * Build a JWT string that includes the user's roles and permissions as claims.
+     * Build a JWT string that includes the user's client-scoped roles and permissions.
      */
     public function toString(): string
     {
@@ -37,22 +38,32 @@ class AccessToken extends BaseAccessToken
             InMemory::plainText('empty', 'empty')
         );
 
-        $userId = $this->getUserIdentifier();
-        $user   = $userId ? User::find($userId) : null;
+        $userId   = $this->getUserIdentifier();
+        $clientId = $this->getClient()->getIdentifier();
+        $user     = $userId ? User::find($userId) : null;
 
         $builder = $jwtConfig->builder()
-            ->permittedFor($this->getClient()->getIdentifier())
+            ->permittedFor($clientId)
             ->identifiedBy($this->getIdentifier())
             ->issuedAt(new DateTimeImmutable())
             ->canOnlyBeUsedAfter(new DateTimeImmutable())
             ->expiresAt($this->getExpiryDateTime())
-            ->relatedTo($userId ?? $this->getClient()->getIdentifier())
+            ->relatedTo($userId ?? $clientId)
             ->withClaim('scopes', $this->getScopes());
 
         if ($user) {
+            // Scope roles/permissions to the requesting client only.
+            $registrar = app(PermissionRegistrar::class);
+            $previousTeamId = $registrar->getPermissionsTeamId();
+
+            $registrar->setPermissionsTeamId($clientId);
+            $roles       = $user->getRoleNames()->values()->toArray();
+            $permissions = $user->getAllPermissions()->pluck('name')->values()->toArray();
+            $registrar->setPermissionsTeamId($previousTeamId);
+
             $builder = $builder
-                ->withClaim('roles', $user->getRoleNames()->values()->toArray())
-                ->withClaim('permissions', $user->getAllPermissions()->pluck('name')->values()->toArray());
+                ->withClaim('roles', $roles)
+                ->withClaim('permissions', $permissions);
         }
 
         return $builder
@@ -60,3 +71,4 @@ class AccessToken extends BaseAccessToken
             ->toString();
     }
 }
+

@@ -85,6 +85,7 @@ class ClientController extends Controller
         return Inertia::render('clients/Show', [
             'client' => $client->only(['id', 'name', 'grant_types', 'redirect_uris', 'login_uri', 'revoked', 'created_at']),
             'secret' => session('client_secret'),
+            'roles_count' => \Spatie\Permission\Models\Role::where('client_id', $client->id)->count(),
         ]);
     }
 

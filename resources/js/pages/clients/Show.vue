@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { Check, Copy, ExternalLink, Pencil, ShieldAlert } from 'lucide-vue-next';
+import { Check, Copy, ExternalLink, Pencil, Shield, ShieldAlert } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { edit as editRoute, index } from '@/routes/clients';
+import { index as rolesIndex } from '@/routes/clients/roles';
 
 type OAuthClient = {
     id: string;
@@ -19,7 +20,7 @@ type OAuthClient = {
 const props = defineProps<{
     client: OAuthClient;
     secret: string | null;
-}>();
+    roles_count: number;
 
 defineOptions({
     layout: {
@@ -177,6 +178,13 @@ async function copyToClipboard(text: string, field: string) {
                 <Link :href="editRoute({ client: client.id }).url">
                     <Pencil class="mr-1.5 h-4 w-4" />
                     Edit client
+                </Link>
+            </Button>
+            <Button variant="outline" as-child>
+                <Link :href="rolesIndex(client).url">
+                    <Shield class="mr-1.5 h-4 w-4" />
+                    Roles & Permissions
+                    <Badge v-if="roles_count > 0" variant="secondary" class="ml-1.5 text-xs">{{ roles_count }}</Badge>
                 </Link>
             </Button>
             <Button variant="outline" as-child>

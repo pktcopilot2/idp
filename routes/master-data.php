@@ -10,6 +10,18 @@ Route::middleware(['auth'])->group(function () {
     Route::get('clients/{client}/edit', [App\Http\Controllers\ClientController::class, 'edit'])->name('clients.edit');
     Route::put('clients/{client}', [App\Http\Controllers\ClientController::class, 'update'])->name('clients.update');
 
+    // Client role & permission management
+    Route::get('clients/{client}/roles', [App\Http\Controllers\ClientRoleController::class, 'index'])->name('clients.roles.index');
+    Route::post('clients/{client}/roles', [App\Http\Controllers\ClientRoleController::class, 'storeRole'])->name('clients.roles.store');
+    Route::put('clients/{client}/roles/{role}', [App\Http\Controllers\ClientRoleController::class, 'updateRole'])->name('clients.roles.update');
+    Route::delete('clients/{client}/roles/{role}', [App\Http\Controllers\ClientRoleController::class, 'destroyRole'])->name('clients.roles.destroy');
+
+    Route::post('clients/{client}/permissions', [App\Http\Controllers\ClientRoleController::class, 'storePermission'])->name('clients.permissions.store');
+    Route::delete('clients/{client}/permissions/{permission}', [App\Http\Controllers\ClientRoleController::class, 'destroyPermission'])->name('clients.permissions.destroy');
+
+    Route::get('clients/{client}/roles/assignments', [App\Http\Controllers\ClientRoleController::class, 'assignments'])->name('clients.roles.assignments');
+    Route::put('clients/{client}/roles/assignments/{user}', [App\Http\Controllers\ClientRoleController::class, 'syncUserRoles'])->name('clients.roles.assignments.sync');
+
     Route::get('users', [App\Http\Controllers\UserController::class, 'index'])->name('users.index');
     Route::get('users/{user}/edit', [App\Http\Controllers\UserController::class, 'edit'])->name('users.edit');
     Route::put('users/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('users.update');

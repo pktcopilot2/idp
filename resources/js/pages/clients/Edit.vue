@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { Plus, Trash2 } from 'lucide-vue-next';
+import { Plus, Shield, Trash2 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import ClientController from '@/actions/App/Http/Controllers/ClientController';
 import InputError from '@/components/InputError.vue';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { edit as editRoute, index, show as showRoute } from '@/routes/clients';
+import { index as rolesIndex } from '@/routes/clients/roles';
 
 type OAuthClient = {
     id: string;
@@ -236,6 +237,16 @@ function submit() {
                     as="a"
                 >
                     Cancel
+                </Button>
+                <Button
+                    type="button"
+                    variant="secondary"
+                    :href="rolesIndex(client).url"
+                    as="a"
+                    class="ml-auto"
+                >
+                    <Shield class="mr-1.5 h-4 w-4" />
+                    Roles & Permissions
                 </Button>
             </div>
         </form>
