@@ -1,7 +1,10 @@
 <?php
 
+use App\Helpers\LdapHelper;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
+use Spatie\Permission\Models\Role;
 
 Route::inertia('/', 'Welcome', [
     'canRegister' => Features::enabled(Features::registration()),

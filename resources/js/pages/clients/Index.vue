@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { useDebounceFn } from '@vueuse/core';
-import { AppWindow, ArrowUpDown, ChevronDown, ChevronUp, Pencil, Plus, Search } from 'lucide-vue-next';
+import { AppWindow, ArrowUpDown, ChevronDown, ChevronUp, Pencil, Plus, Search, Trash2 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -113,6 +113,14 @@ function grantTypeLabel(grant: string): string {
         urn_ietf_params_oauth_grant_type_device_code: 'Device Code',
     };
     return labels[grant] ?? grant;
+}
+
+function deleteClient(client: OAuthClient) {
+    if (!confirm(`Delete client "${client.name}"? This action cannot be undone.`)) return;
+
+    router.delete(`/clients/${client.id}`, {
+        preserveScroll: true,
+    });
 }
 </script>
 
@@ -274,15 +282,26 @@ function grantTypeLabel(grant: string): string {
                             {{ new Date(client.created_at).toLocaleDateString() }}
                         </td>
                         <td class="px-4 py-3">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                as="a"
-                                :href="editRoute({ client: client.id }).url"
-                                title="Edit"
-                            >
-                                <Pencil class="h-4 w-4 text-muted-foreground" />
-                            </Button>
+                            <div class="flex items-center gap-1">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    as="a"
+                                    :href="editRoute({ client: client.id }).url"
+                                    title="Edit"
+                                >
+                                    <Pencil class="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    class="text-destructive hover:text-destructive"
+                                    title="Delete"
+                                    @click="deleteClient(client)"
+                                >
+                                    <Trash2 class="h-4 w-4" />
+                                </Button>
+                            </div>
                         </td>
                     </tr>
                     <tr v-if="clients.data.length === 0">

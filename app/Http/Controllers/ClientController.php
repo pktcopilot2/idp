@@ -8,9 +8,17 @@ use App\Models\Passport\Client;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Passport\AuthCode;
+use Laravel\Passport\DeviceCode;
+use Laravel\Passport\RefreshToken;
+use Laravel\Passport\Token;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class ClientController extends Controller
 {
@@ -107,5 +115,39 @@ class ClientController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Client updated successfully.']);
 
         return redirect()->route('clients.show', $client);
+    }
+
+    public function destroy(Client $client): RedirectResponse
+    {
+        $clientName = $client->name;
+
+        DB::transaction(function () use ($client) {
+            $accessTokenIds = Token::query()
+                ->where('client_id', $client->id)
+                ->pluck('id');
+
+            if ($accessTokenIds->isNotEmpty()) {
+                RefreshToken::query()
+                    ->whereIn('access_token_id', $accessTokenIds)
+                    ->delete();
+            }
+
+            Token::query()->where('client_id', $client->id)->delete();
+            AuthCode::query()->where('client_id', $client->id)->delete();
+            DeviceCode::query()->where('client_id', $client->id)->delete();
+
+            $client->assignedUsers()->detach();
+
+            Role::where('client_id', $client->id)->get()->each->delete();
+            Permission::where('client_id', $client->id)->get()->each->delete();
+
+            $client->delete();
+        });
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Client \"{$clientName}\" deleted."]);
+
+        return redirect()->route('clients.index');
     }
 }
