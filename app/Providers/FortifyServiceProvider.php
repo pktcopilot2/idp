@@ -11,6 +11,7 @@ use App\Features\EmailMfa;
 use App\Features\TwoFactorAuthentication as TwoFactorAuthenticationFeature;
 use App\Features\WhatsAppMfa;
 use App\Http\Responses\TwoFactorLoginResponse;
+use App\Models\Passport\Client as OauthClient;
 use App\Models\User;
 use Laravel\Fortify\Actions\AttemptToAuthenticate;
 use Laravel\Fortify\Actions\CanonicalizeUsername;
@@ -66,13 +67,43 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
-        Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
-            'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'canRegister' => Features::enabled(Features::registration()),
-            'status' => $request->session()->get('status'),
-            'errors' => $request->session()->get('errors')?->getBag('default')->messages() ?? [],
-            'csrfToken' => csrf_token(),
-        ]));
+        Fortify::loginView(function (Request $request) {
+            $clientId = (string) $request->query('client_id', '');
+
+            if ($clientId === '') {
+                $intended = (string) $request->session()->get('url.intended', '');
+                if ($intended !== '') {
+                    $intendedPath = parse_url($intended, PHP_URL_PATH) ?: '';
+                    if ($intendedPath === '/oauth/authorize') {
+                        parse_str(parse_url($intended, PHP_URL_QUERY) ?: '', $query);
+                        $clientId = (string) ($query['client_id'] ?? '');
+                    }
+                }
+            }
+
+            $oauthClient = null;
+            if ($clientId !== '') {
+                $client = OauthClient::query()
+                    ->select(['id', 'name'])
+                    ->find($clientId);
+
+                if ($client) {
+                    $oauthClient = [
+                        'id' => (string) $client->id,
+                        'name' => (string) $client->name,
+                    ];
+                }
+            }
+
+            return Inertia::render('auth/Login', [
+                'canResetPassword' => Features::enabled(Features::resetPasswords()),
+                'canRegister' => Features::enabled(Features::registration()),
+                'status' => $request->session()->get('status'),
+                'errors' => $request->session()->get('errors')?->getBag('default')->messages() ?? [],
+                'csrfToken' => csrf_token(),
+                'oauthClient' => $oauthClient,
+            ]);
+        });
 
         Fortify::twoFactorChallengeView(fn (Request $request) => Inertia::render('auth/TwoFactorChallenge', [
             'csrfToken' => csrf_token(),

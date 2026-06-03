@@ -7,9 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { register } from '@/routes';
 import { store } from '@/routes/login';
-import { request } from '@/routes/password';
 
 defineOptions({
     layout: {
@@ -24,6 +22,10 @@ defineProps<{
     canRegister: boolean;
     errors?: Record<string, string>;
     csrfToken: string;
+    oauthClient?: {
+        id: string;
+        name: string;
+    } | null;
 }>();
 </script>
 
@@ -35,6 +37,13 @@ defineProps<{
         class="mb-4 text-center text-sm font-medium text-green-600"
     >
         {{ status }}
+    </div>
+
+    <div
+        v-if="oauthClient"
+        class="mb-4 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900"
+    >
+        You are signing in to continue to <span class="font-semibold">{{ oauthClient.name }}</span>.
     </div>
 
     <form :action="store().url" method="POST" class="flex flex-col gap-6">
@@ -61,7 +70,7 @@ defineProps<{
                     <Label for="password">Password</Label>
                     <TextLink
                         v-if="canResetPassword"
-                        :href="request()"
+                        href="/forgot-password"
                         class="text-sm"
                         :tabindex="5"
                     >
@@ -122,7 +131,7 @@ defineProps<{
                 href="/login/fusionauth"
                 type="button"
                 variant="outline"
-                class="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600"
+                class="w-full bg-linear-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600"
                 :tabindex="6"
                 data-test="login-fusionauth-button"
             >
@@ -135,7 +144,7 @@ defineProps<{
             v-if="canRegister"
         >
             Don't have an account?
-            <TextLink :href="register()" :tabindex="6">Sign up</TextLink>
+            <TextLink href="/register" :tabindex="6">Sign up</TextLink>
         </div>
     </form>
 </template>
