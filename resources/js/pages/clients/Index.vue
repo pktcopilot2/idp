@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { useDebounceFn } from '@vueuse/core';
-import { AppWindow, ArrowUpDown, ChevronDown, ChevronUp, Pencil, Plus, Search, Trash2 } from 'lucide-vue-next';
+import { AppWindow, ArrowUpDown, Ban, ChevronDown, ChevronUp, Pencil, Plus, Search, Trash2 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -119,6 +119,15 @@ function deleteClient(client: OAuthClient) {
     if (!confirm(`Delete client "${client.name}"? This action cannot be undone.`)) return;
 
     router.delete(`/clients/${client.id}`, {
+        preserveScroll: true,
+    });
+}
+
+function revokeClient(client: OAuthClient) {
+    if (client.revoked) return;
+    if (!confirm(`Revoke client "${client.name}"? Users will no longer be able to authenticate with this client.`)) return;
+
+    router.patch(`/clients/${client.id}/revoke`, {}, {
         preserveScroll: true,
     });
 }
@@ -291,6 +300,15 @@ function deleteClient(client: OAuthClient) {
                                     title="Edit"
                                 >
                                     <Pencil class="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    :disabled="client.revoked"
+                                    title="Revoke"
+                                    @click="revokeClient(client)"
+                                >
+                                    <Ban class="h-4 w-4 text-muted-foreground" />
                                 </Button>
                                 <Button
                                     variant="ghost"

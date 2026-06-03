@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Check, Copy, ExternalLink, Pencil, Shield, ShieldAlert, Trash2 } from 'lucide-vue-next';
+import { Ban, Check, Copy, ExternalLink, Pencil, Shield, ShieldAlert, Trash2 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -63,6 +63,13 @@ function deleteClient() {
     if (!confirm(`Delete client "${props.client.name}"? This action cannot be undone.`)) return;
 
     router.delete(`/clients/${props.client.id}`);
+}
+
+function revokeClient() {
+    if (props.client.revoked) return;
+    if (!confirm(`Revoke client "${props.client.name}"? Users will no longer be able to authenticate with this client.`)) return;
+
+    router.patch(`/clients/${props.client.id}/revoke`);
 }
 </script>
 
@@ -196,6 +203,14 @@ function deleteClient() {
             </Button>
             <Button variant="outline" as-child>
                 <Link :href="index()">Back to clients</Link>
+            </Button>
+            <Button
+                variant="secondary"
+                :disabled="client.revoked"
+                @click="revokeClient"
+            >
+                <Ban class="mr-1.5 h-4 w-4" />
+                Revoke client
             </Button>
             <Button variant="destructive" @click="deleteClient">
                 <Trash2 class="mr-1.5 h-4 w-4" />

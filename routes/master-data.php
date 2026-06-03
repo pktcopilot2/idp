@@ -9,6 +9,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('clients/{client}', [App\Http\Controllers\ClientController::class, 'show'])->name('clients.show');
     Route::get('clients/{client}/edit', [App\Http\Controllers\ClientController::class, 'edit'])->name('clients.edit');
     Route::put('clients/{client}', [App\Http\Controllers\ClientController::class, 'update'])->name('clients.update');
+    Route::patch('clients/{client}/revoke', [App\Http\Controllers\ClientController::class, 'revoke'])->name('clients.revoke');
     Route::delete('clients/{client}', [App\Http\Controllers\ClientController::class, 'destroy'])->name('clients.destroy');
 
     // Client role & permission management

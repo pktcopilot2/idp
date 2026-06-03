@@ -117,6 +117,41 @@ class ClientController extends Controller
         return redirect()->route('clients.show', $client);
     }
 
+    public function revoke(Client $client): RedirectResponse
+    {
+        if ($client->revoked) {
+            Inertia::flash('toast', ['type' => 'info', 'message' => "Client \"{$client->name}\" is already revoked."]);
+
+            return redirect()->route('clients.show', $client);
+        }
+
+        DB::transaction(function () use ($client) {
+            $accessTokenIds = Token::query()
+                ->where('client_id', $client->id)
+                ->pluck('id');
+
+            Token::query()
+                ->where('client_id', $client->id)
+                ->update(['revoked' => true]);
+
+            if ($accessTokenIds->isNotEmpty()) {
+                RefreshToken::query()
+                    ->whereIn('access_token_id', $accessTokenIds)
+                    ->update(['revoked' => true]);
+            }
+
+            AuthCode::query()
+                ->where('client_id', $client->id)
+                ->update(['revoked' => true]);
+
+            $client->forceFill(['revoked' => true])->save();
+        });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Client \"{$client->name}\" revoked successfully."]);
+
+        return redirect()->route('clients.show', $client);
+    }
+
     public function destroy(Client $client): RedirectResponse
     {
         $clientName = $client->name;
