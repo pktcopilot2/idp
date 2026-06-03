@@ -152,6 +152,21 @@ class ClientController extends Controller
         return redirect()->route('clients.show', $client);
     }
 
+    public function restore(Client $client): RedirectResponse
+    {
+        if (! $client->revoked) {
+            Inertia::flash('toast', ['type' => 'info', 'message' => "Client \"{$client->name}\" is not revoked."]);
+
+            return redirect()->route('clients.show', $client);
+        }
+
+        $client->forceFill(['revoked' => false])->save();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Client \"{$client->name}\" restored successfully."]);
+
+        return redirect()->route('clients.show', $client);
+    }
+
     public function destroy(Client $client): RedirectResponse
     {
         $clientName = $client->name;

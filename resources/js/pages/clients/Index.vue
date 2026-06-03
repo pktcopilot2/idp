@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { useDebounceFn } from '@vueuse/core';
-import { AppWindow, ArrowUpDown, Ban, ChevronDown, ChevronUp, Pencil, Plus, Search, Trash2 } from 'lucide-vue-next';
+import { AppWindow, ArrowUpDown, Ban, ChevronDown, ChevronUp, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -128,6 +128,15 @@ function revokeClient(client: OAuthClient) {
     if (!confirm(`Revoke client "${client.name}"? Users will no longer be able to authenticate with this client.`)) return;
 
     router.patch(`/clients/${client.id}/revoke`, {}, {
+        preserveScroll: true,
+    });
+}
+
+function restoreClient(client: OAuthClient) {
+    if (!client.revoked) return;
+    if (!confirm(`Restore client "${client.name}"? Users will be able to authenticate with this client again.`)) return;
+
+    router.patch(`/clients/${client.id}/restore`, {}, {
         preserveScroll: true,
     });
 }
@@ -304,11 +313,11 @@ function revokeClient(client: OAuthClient) {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    :disabled="client.revoked"
-                                    title="Revoke"
-                                    @click="revokeClient(client)"
+                                    :title="client.revoked ? 'Restore' : 'Revoke'"
+                                    @click="client.revoked ? restoreClient(client) : revokeClient(client)"
                                 >
-                                    <Ban class="h-4 w-4 text-muted-foreground" />
+                                    <Ban v-if="!client.revoked" class="h-4 w-4 text-muted-foreground" />
+                                    <RefreshCw v-if="client.revoked" class="h-4 w-4 text-muted-foreground" />
                                 </Button>
                                 <Button
                                     variant="ghost"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Ban, Check, Copy, ExternalLink, Pencil, Shield, ShieldAlert, Trash2 } from 'lucide-vue-next';
+import { Ban, Check, Copy, ExternalLink, Pencil, RefreshCw, Shield, ShieldAlert, Trash2 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -70,6 +70,12 @@ function revokeClient() {
     if (!confirm(`Revoke client "${props.client.name}"? Users will no longer be able to authenticate with this client.`)) return;
 
     router.patch(`/clients/${props.client.id}/revoke`);
+}
+function restoreClient() {
+    if (!props.client.revoked) return;
+    if (!confirm(`Restore client "${props.client.name}"? Users will be able to authenticate with this client again.`)) return;
+
+    router.patch(`/clients/${props.client.id}/restore`);
 }
 </script>
 
@@ -206,11 +212,11 @@ function revokeClient() {
             </Button>
             <Button
                 variant="secondary"
-                :disabled="client.revoked"
-                @click="revokeClient"
+                @click="client.revoked ? restoreClient() : revokeClient()"
             >
-                <Ban class="mr-1.5 h-4 w-4" />
-                Revoke client
+                <Ban v-if="!client.revoked" class="mr-1.5 h-4 w-4" />
+                <RefreshCw v-if="client.revoked" class="mr-1.5 h-4 w-4" />
+                {{ client.revoked ? 'Restore client' : 'Revoke client' }}
             </Button>
             <Button variant="destructive" @click="deleteClient">
                 <Trash2 class="mr-1.5 h-4 w-4" />
