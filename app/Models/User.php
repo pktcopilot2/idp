@@ -59,7 +59,7 @@ class User extends Authenticatable implements OAuthenticatable
         }
 
         $ldap = new \App\Helpers\LdapHelper();
-        return $ldap->getUserAliasesOrNull($this->username);
+        return $ldap->getUserAliasesOrNull($this->username) ?? [];
     }
 
     public function isLocked(): bool

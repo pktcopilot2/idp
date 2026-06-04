@@ -11,11 +11,11 @@ class LdapHelper
     private static function ldapConfig(): array
     {
         return [
-            'host' => '12.7.2.152',
-            'port' => 389,
-            'dn'   => 'uid=zimbra,cn=admins,cn=zimbra',
-            'pass' => '2erFCvsnR',
-            'tree' => 'ou=people,dc=pupukkaltim,dc=com',
+            'host' => config('app.ldap.host'),
+            'port' => config('app.ldap.port', 389),
+            'dn'   => config('app.ldap.dn'),
+            'pass' => config('app.ldap.pass'),
+            'tree' => config('app.ldap.tree'),
         ];
     }
 

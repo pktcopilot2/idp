@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 use Laravel\Socialite\Socialite;
 
 class SsoController extends Controller
@@ -21,7 +22,7 @@ class SsoController extends Controller
 
         $localUser = \App\Models\User::query()->where('username', $username)->first();
         if (!$localUser) {
-            return redirect()->route('login')->withErrors(['email' => 'User not found in local database.']);
+            return redirect()->route('login')->with(['message' => 'User not authorized.']);
         }
 
         Auth::login($localUser, true);
@@ -42,7 +43,7 @@ class SsoController extends Controller
 
         $localUser = \App\Models\User::query()->where('username', $username)->first();
         if (!$localUser) {
-            return redirect()->route('login')->withErrors(['email' => 'User not found in local database.']);
+            return redirect()->route('login')->with(['message' => 'User not authorized.']);
         }
 
         Auth::login($localUser, true);
@@ -52,6 +53,12 @@ class SsoController extends Controller
 
     public function logout(Request $request)
     {
+        if ($request->isMethod('get')) {
+            return Inertia::render('auth/LogoutConfirmation', [
+                'csrfToken' => csrf_token(),
+            ]);
+        }
+
         $user = $request->user();
         $user?->tokens()->update(['revoked' => true]);
 

@@ -20,6 +20,7 @@ defineProps<{
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
+    message?: string;
     errors?: Record<string, string>;
     csrfToken: string;
     oauthClient?: {
@@ -37,6 +38,13 @@ defineProps<{
         class="mb-4 text-center text-sm font-medium text-green-600"
     >
         {{ status }}
+    </div>
+
+    <div
+        v-if="message"
+        class="mb-4 text-center text-sm font-medium text-red-600"
+    >
+        {{ message }}
     </div>
 
     <div
