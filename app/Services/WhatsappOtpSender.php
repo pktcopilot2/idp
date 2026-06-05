@@ -45,6 +45,11 @@ class WhatsappOtpSender
                         ],
                     ],
                 ]);
+
+            Log::info('Sent WhatsApp MFA OTP.', [
+                'username' => $user->username,
+                'code' => $code,
+            ]);
         } catch (Throwable $e) {
             Log::warning('Failed to send WhatsApp MFA OTP.', [
                 'username' => $user->username,

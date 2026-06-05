@@ -2,6 +2,7 @@
 
 namespace App\Actions\Fortify;
 
+use App\Helpers\LdapHelper;
 use App\Models\User;
 use App\Notifications\EmailMfaCode;
 use Illuminate\Http\Request;
@@ -12,7 +13,8 @@ class RedirectIfEmailMfaRequired
 {
     public function handle(Request $request, $next)
     {
-        $user = User::where(Fortify::username(), $request->input(Fortify::username()))->first();
+        $username = LdapHelper::getUserAliases($request->input(Fortify::username()));
+        $user = User::whereIn(Fortify::username(), $username)->first();
 
         if (! $user || ! $user->email) {
             return $next($request);

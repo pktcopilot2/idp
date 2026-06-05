@@ -41,6 +41,8 @@ return [
         'redirect' => env('KEYCLOAK_REDIRECT_URI'),
         'base_url' => env('KEYCLOAK_BASE_URL'),
         'realms' => env('KEYCLOAK_REALM'),
+        'userinfo_endpoint' => env('KEYCLOAK_BASE_URL').'/realms/'.env('KEYCLOAK_REALM').'/protocol/openid-connect/userinfo',
+        'account_endpoint' => env('KEYCLOAK_BASE_URL').'/realms/'.env('KEYCLOAK_REALM').'/account',
     ],
 
     'fusionauth' => [
@@ -50,6 +52,8 @@ return [
         'base_url' => env('FUSIONAUTH_BASE_URL'),
         'tenant_id' => env('FUSIONAUTH_TENANT_ID'),
         'logout_url' => env('FUSIONAUTH_BASE_URL').'/oauth2/logout?client_id='.env('FUSIONAUTH_CLIENT_ID').'&tenantId='.env('FUSIONAUTH_TENANT_ID').'&post_logout_redirect_uri='.env('APP_URL').'/login',
+        'userinfo_endpoint' => env('FUSIONAUTH_BASE_URL').'/oauth2/userinfo?tenantId='.env('FUSIONAUTH_TENANT_ID'),
+        'account_endpoint' => env('FUSIONAUTH_BASE_URL').'/app/'.env('FUSIONAUTH_TENANT_ID').'/user/settings',
     ],
 
     'whatsapp_mfa' => [

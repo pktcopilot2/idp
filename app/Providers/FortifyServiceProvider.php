@@ -143,14 +143,14 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureAuthentication(): void
     {
-        Fortify::loginThrough(function () {
+        Fortify::loginThrough(function (Request $request) {
             return [
                 config('fortify.limiters.login') ? null : EnsureLoginIsNotThrottled::class,
                 config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
                 RedirectIfPasswordResetRequired::class,
-                Feature::for(Auth::user())->active(TwoFactorAuthenticationFeature::class) ? RedirectsIfTwoFactorAuthenticatable::class : null,
-                Feature::for(Auth::user())->active(WhatsAppMfa::class) ? RedirectIfWhatsappMfaRequired::class : null,
-                Feature::for(Auth::user())->active(EmailMfa::class) ? RedirectIfEmailMfaRequired::class : null,
+                Feature::for(null)->active(TwoFactorAuthenticationFeature::class) ? RedirectsIfTwoFactorAuthenticatable::class : null,
+                Feature::for(null)->active(WhatsAppMfa::class) ? RedirectIfWhatsappMfaRequired::class : null,
+                Feature::for(null)->active(EmailMfa::class) ? RedirectIfEmailMfaRequired::class : null,
                 AttemptToAuthenticate::class,
                 PrepareAuthenticatedSession::class,
             ];

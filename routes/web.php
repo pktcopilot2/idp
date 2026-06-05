@@ -1,17 +1,16 @@
 <?php
 
 use App\Helpers\LdapHelper;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
-use Spatie\Permission\Models\Role;
 
 Route::inertia('/', 'Welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 
 Route::get('/test', function () {
-    // ...
+    $aliases = LdapHelper::getUserAliases('k236615@pupukkaltim.com');
+    dd($aliases);
 })->name('test');
 
 Route::middleware(['auth', 'verified'])->group(function () {

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Fortify;
 
+use App\Helpers\LdapHelper;
 use App\Models\User;
 use App\Services\WhatsappOtpSender;
 use Illuminate\Http\Request;
@@ -16,7 +17,8 @@ class RedirectIfWhatsappMfaRequired
 
     public function handle(Request $request, $next)
     {
-        $user = User::where(Fortify::username(), $request->input(Fortify::username()))->first();
+        $username = LdapHelper::getUserAliases($request->input(Fortify::username()));
+        $user = User::whereIn(Fortify::username(), $username)->first();
 
         if (! $user || ! $user->whatsapp_number) {
             return $next($request);

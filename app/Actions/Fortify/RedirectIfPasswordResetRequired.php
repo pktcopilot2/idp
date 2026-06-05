@@ -2,6 +2,7 @@
 
 namespace App\Actions\Fortify;
 
+use App\Helpers\LdapHelper;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Laravel\Fortify\Fortify;
@@ -10,7 +11,8 @@ class RedirectIfPasswordResetRequired
 {
     public function handle(Request $request, $next)
     {
-        $user = User::where(Fortify::username(), $request->input(Fortify::username()))->first();
+        $username = LdapHelper::getUserAliases($request->input(Fortify::username()));
+        $user = User::whereIn(Fortify::username(), $username)->first();
 
         if (! $user) {
             return $next($request);

@@ -16,11 +16,11 @@ class Client extends BaseClient
      */
     public function skipsAuthorization(Authenticatable $user, array $scopes): bool
     {
-        // return $this->assignedUsers()
-        //     ->where('users.id', $user->getAuthIdentifier())
-        //     ->exists();
-
         return true;
+
+        return $this->assignedUsers()
+            ->where('users.id', $user->getAuthIdentifier())
+            ->exists();
     }
 
     public function assignedUsers(): BelongsToMany

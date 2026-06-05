@@ -18,13 +18,13 @@ class SsoController extends Controller
     {
         $user = Socialite::driver('keycloak')->stateless()->user();
         $username = $user->user['preferred_username'];
-        session(['keycloak_token' => $user->token]);
 
         $localUser = \App\Models\User::query()->where('username', $username)->first();
         if (!$localUser) {
             return redirect()->route('login')->with(['message' => 'User not authorized.']);
         }
 
+        session(['keycloak_token' => $user->token]);
         Auth::login($localUser, true);
 
         return redirect()->intended(route('dashboard'));
@@ -39,13 +39,13 @@ class SsoController extends Controller
     {
         $user = Socialite::driver('fusionauth')->stateless()->user();
         $username = optional($user->user)['preferred_username'];
-        session(['fusionauth_token' => $user->token]);
 
         $localUser = \App\Models\User::query()->where('username', $username)->first();
         if (!$localUser) {
             return redirect()->route('login')->with(['message' => 'User not authorized.']);
         }
 
+        session(['fusionauth_token' => $user->token]);
         Auth::login($localUser, true);
 
         return redirect()->intended(route('dashboard'));

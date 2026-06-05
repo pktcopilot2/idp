@@ -17,9 +17,9 @@ class EmailMfa
     /**
      * Resolve the feature's initial value.
      */
-    public function resolve(User $user): bool
+    public function resolve(?User $user): bool
     {
-        if (str_contains($user->email, 'pupukkaltim.com')) {
+        if (str_contains($user?->email, 'pupukkaltim.com') || is_null($user)) {
             return true;
         } else {
             return false;
