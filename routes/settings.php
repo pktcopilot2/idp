@@ -24,7 +24,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('settings/security/email-mfa', [SecurityController::class, 'enableEmailMfa'])->name('security.email-mfa.enable');
     Route::delete('settings/security/email-mfa', [SecurityController::class, 'disableEmailMfa'])->name('security.email-mfa.disable');
 
-    Route::post('settings/security/whatsapp-mfa', [SecurityController::class, 'enableWhatsappMfa'])->name('security.whatsapp-mfa.enable');
+    Route::post('settings/security/whatsapp-mfa', [SecurityController::class, 'enableWhatsappMfa'])->name('security.whatsapp-mfa.enable')->middleware('throttle:5,10');
+    Route::post('settings/security/whatsapp-mfa/confirm', [SecurityController::class, 'confirmWhatsappMfa'])->name('security.whatsapp-mfa.confirm');
     Route::delete('settings/security/whatsapp-mfa', [SecurityController::class, 'disableWhatsappMfa'])->name('security.whatsapp-mfa.disable');
 
     Route::inertia('settings/appearance', 'settings/Appearance')->name('appearance.edit');

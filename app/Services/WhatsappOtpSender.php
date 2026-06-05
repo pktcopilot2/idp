@@ -38,11 +38,6 @@ class WhatsappOtpSender
                             'value' => $user->name,
                             'param_type' => 'body',
                         ],
-                        [
-                            'model' => 2,
-                            'value' => $code,
-                            'param_type' => 'body',
-                        ],
                     ],
                 ]);
 

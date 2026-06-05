@@ -32,6 +32,8 @@ type Props = {
     emailMfaSetupPending?: boolean;
     whatsappMfaFeatureEnabled?: boolean;
     whatsappMfaEnabled?: boolean;
+    whatsappMfaSetupPending?: boolean;
+    whatsappMfaSetupPendingNumber?: string | null;
     whatsappNumber?: string | null;
     passwordRules: string;
 };
@@ -45,6 +47,8 @@ const props = withDefaults(defineProps<Props>(), {
     emailMfaSetupPending: false,
     whatsappMfaFeatureEnabled: false,
     whatsappMfaEnabled: false,
+    whatsappMfaSetupPending: false,
+    whatsappMfaSetupPendingNumber: null,
     whatsappNumber: null,
 });
 
@@ -62,10 +66,16 @@ defineOptions({
 const { hasSetupData, clearTwoFactorAuthData } = useTwoFactorAuth();
 const showSetupModal = ref<boolean>(false);
 const showEmailMfaModal = ref<boolean>(props.emailMfaSetupPending);
+const showWhatsappMfaModal = ref<boolean>(props.whatsappMfaSetupPending);
 
 watch(
     () => props.emailMfaSetupPending,
     (val) => { showEmailMfaModal.value = val; },
+);
+
+watch(
+    () => props.whatsappMfaSetupPending,
+    (val) => { showWhatsappMfaModal.value = val; },
 );
 
 onUnmounted(() => clearTwoFactorAuthData());
@@ -318,6 +328,7 @@ onUnmounted(() => clearTwoFactorAuthData());
 
             <Form
                 v-bind="SecurityController.enableWhatsappMfa.form()"
+                @success="showWhatsappMfaModal = true"
                 class="w-full max-w-sm space-y-4"
                 #default="{ errors, processing }"
             >
@@ -337,6 +348,60 @@ onUnmounted(() => clearTwoFactorAuthData());
                     Enable WhatsApp MFA
                 </Button>
             </Form>
+
+            <Dialog :open="showWhatsappMfaModal" @update:open="showWhatsappMfaModal = $event">
+                <DialogContent class="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>Verify your WhatsApp</DialogTitle>
+                        <DialogDescription>
+                            A 6-digit verification code has been sent to your WhatsApp.
+                            Enter the code below to enable WhatsApp MFA.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <Form
+                        v-bind="SecurityController.confirmWhatsappMfa.form()"
+                        class="space-y-4"
+                        #default="{ errors, processing }"
+                    >
+                        <div class="grid gap-2">
+                            <Label for="whatsapp_mfa_code">Verification code</Label>
+                            <Input
+                                id="whatsapp_mfa_code"
+                                name="code"
+                                maxlength="6"
+                                placeholder="000000"
+                                autocomplete="one-time-code"
+                                :class="{ 'border-destructive': errors.code }"
+                            />
+                            <InputError :message="errors.code" />
+                        </div>
+
+                        <DialogFooter class="flex-col items-start gap-3 sm:flex-col sm:items-start">
+                            <Button type="submit" class="w-full" :disabled="processing">
+                                Verify &amp; Enable
+                            </Button>
+                            <Form
+                                v-bind="SecurityController.enableWhatsappMfa.form()"
+                                #default="{ processing: resending }"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="whatsapp_number"
+                                    :value="whatsappMfaSetupPendingNumber ?? whatsappNumber ?? ''"
+                                >
+                                <button
+                                    type="submit"
+                                    :disabled="resending"
+                                    class="text-sm text-muted-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current!"
+                                >
+                                    Send a new code
+                                </button>
+                            </Form>
+                        </DialogFooter>
+                    </Form>
+                </DialogContent>
+            </Dialog>
         </div>
 
         <div v-else class="flex flex-col items-start justify-start space-y-4">

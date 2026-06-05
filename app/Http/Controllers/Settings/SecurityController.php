@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
 use App\Notifications\EmailMfaCode;
+use App\Services\WhatsappOtpSender;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -49,6 +50,8 @@ class SecurityController extends Controller implements HasMiddleware
             'emailMfaEnabled' => (bool) $request->user()->email_mfa_enabled,
             'emailMfaSetupPending' => $request->session()->get('email_mfa_setup.id') === $request->user()->getKey(),
             'whatsappMfaEnabled' => (bool) $request->user()->whatsapp_mfa_enabled,
+            'whatsappMfaSetupPending' => $request->session()->get('whatsapp_mfa_setup.id') === $request->user()->getKey(),
+            'whatsappMfaSetupPendingNumber' => $request->session()->get('whatsapp_mfa_setup.whatsapp_number'),
             'whatsappNumber' => $request->user()->whatsapp_number,
         ];
 
@@ -146,9 +149,9 @@ class SecurityController extends Controller implements HasMiddleware
     }
 
     /**
-     * Enable WhatsApp MFA for the user.
+     * Send a verification code to confirm WhatsApp MFA setup.
      */
-    public function enableWhatsappMfa(Request $request): RedirectResponse
+    public function enableWhatsappMfa(Request $request, WhatsappOtpSender $whatsappOtpSender): RedirectResponse
     {
         abort_unless(Feature::for(Auth::user())->active(WhatsAppMfa::class), 403);
 
@@ -156,9 +159,57 @@ class SecurityController extends Controller implements HasMiddleware
             'whatsapp_number' => ['required', 'string', 'max:30'],
         ]);
 
-        $request->user()->update([
+        $user = $request->user();
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $whatsappNumber = $request->string('whatsapp_number')->toString();
+
+        Cache::put("whatsapp_mfa_setup:{$user->getKey()}", $code, now()->addMinutes(10));
+        $request->session()->put('whatsapp_mfa_setup.id', $user->getKey());
+        $request->session()->put('whatsapp_mfa_setup.whatsapp_number', $whatsappNumber);
+
+        $whatsappOtpSender->send($user, $code);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('A verification code has been sent to your WhatsApp.')]);
+
+        return back();
+    }
+
+    /**
+     * Confirm the verification code and enable WhatsApp MFA.
+     */
+    public function confirmWhatsappMfa(Request $request): RedirectResponse
+    {
+        abort_unless(Feature::for(Auth::user())->active(WhatsAppMfa::class), 403);
+
+        $request->validate(['code' => ['required', 'string', 'size:6']]);
+
+        $user = $request->user();
+        $sessionId = $request->session()->get('whatsapp_mfa_setup.id');
+
+        if ($sessionId !== $user->getKey()) {
+            return redirect()->route('security.edit');
+        }
+
+        $cachedCode = Cache::get("whatsapp_mfa_setup:{$user->getKey()}");
+
+        if (! $cachedCode || ! hash_equals($cachedCode, $request->input('code'))) {
+            throw ValidationException::withMessages([
+                'code' => [__('The provided verification code is invalid.')],
+            ]);
+        }
+
+        $whatsappNumber = $request->session()->get('whatsapp_mfa_setup.whatsapp_number');
+
+        if (! is_string($whatsappNumber) || $whatsappNumber === '') {
+            return redirect()->route('security.edit');
+        }
+
+        Cache::forget("whatsapp_mfa_setup:{$user->getKey()}");
+        $request->session()->forget(['whatsapp_mfa_setup.id', 'whatsapp_mfa_setup.whatsapp_number']);
+
+        $user->update([
             'whatsapp_mfa_enabled' => true,
-            'whatsapp_number' => $request->whatsapp_number,
+            'whatsapp_number' => $whatsappNumber,
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('WhatsApp MFA enabled.')]);
@@ -174,6 +225,8 @@ class SecurityController extends Controller implements HasMiddleware
         abort_unless(Feature::for(Auth::user())->active(WhatsAppMfa::class), 403);
 
         $request->user()->update(['whatsapp_mfa_enabled' => false]);
+        Cache::forget("whatsapp_mfa_setup:{$request->user()->getKey()}");
+        $request->session()->forget(['whatsapp_mfa_setup.id', 'whatsapp_mfa_setup.whatsapp_number']);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('WhatsApp MFA disabled.')]);
 
