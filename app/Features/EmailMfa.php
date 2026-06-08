@@ -9,10 +9,10 @@ class EmailMfa
     /**
      * Run an always-in-memory check before the stored value is retrieved.
      */
-    // public function before(User $user): mixed
-    // {
-    //     return (bool) config('features.email_mfa');
-    // }
+    public function before(?User $user): mixed
+    {
+        return (bool) config('features.email_mfa');
+    }
 
     /**
      * Resolve the feature's initial value.

@@ -9,10 +9,10 @@ class TwoFactorAuthentication
     /**
      * Run an always-in-memory check before the stored value is retrieved.
      */
-    // public function before(User $user): mixed
-    // {
-    //     return (bool) config('features.two_factor_authentication');
-    // }
+    public function before(?User $user): mixed
+    {
+        return (bool) config('features.two_factor_authentication');
+    }
 
     /**
     * Resolve the feature's initial value.

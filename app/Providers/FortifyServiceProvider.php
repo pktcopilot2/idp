@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Actions\Fortify\Authenticate;
+use App\Actions\Fortify\ConfirmPassword;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\RedirectIfEmailMfaRequired;
 use App\Actions\Fortify\RedirectIfWhatsappMfaRequired;
@@ -12,7 +14,6 @@ use App\Features\TwoFactorAuthentication as TwoFactorAuthenticationFeature;
 use App\Features\WhatsAppMfa;
 use App\Http\Responses\TwoFactorLoginResponse;
 use App\Models\Passport\Client as OauthClient;
-use App\Models\User;
 use Laravel\Fortify\Actions\AttemptToAuthenticate;
 use Laravel\Fortify\Actions\CanonicalizeUsername;
 use Laravel\Fortify\Actions\EnsureLoginIsNotThrottled;
@@ -20,12 +21,9 @@ use Laravel\Fortify\Actions\PrepareAuthenticatedSession;
 use Laravel\Fortify\Contracts\RedirectsIfTwoFactorAuthenticatable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\TwoFactorLoginResponse as TwoFactorLoginResponseContract;
 use Laravel\Fortify\Features;
@@ -60,6 +58,8 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+        Fortify::authenticateUsing(app(Authenticate::class));
+        Fortify::confirmPasswordsUsing(app(ConfirmPassword::class));
     }
 
     /**
@@ -106,10 +106,16 @@ class FortifyServiceProvider extends ServiceProvider
             ]);
         });
 
-        Fortify::twoFactorChallengeView(fn (Request $request) => Inertia::render('auth/TwoFactorChallenge', [
-            'csrfToken' => csrf_token(),
-            'errors' => $request->session()->get('errors')?->getBag('default')->messages() ?? [],
-        ]));
+        Fortify::twoFactorChallengeView(function (Request $request) {
+            if (! Feature::for(null)->active(TwoFactorAuthenticationFeature::class)) {
+                return redirect()->route('login');
+            }
+
+            return Inertia::render('auth/TwoFactorChallenge', [
+                'csrfToken' => csrf_token(),
+                'errors' => $request->session()->get('errors')?->getBag('default')->messages() ?? [],
+            ]);
+        });
 
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/ConfirmPassword'));
     }
@@ -155,94 +161,5 @@ class FortifyServiceProvider extends ServiceProvider
                 PrepareAuthenticatedSession::class,
             ];
         });
-
-        Fortify::authenticateUsing(function (Request $request) {
-            session([
-                'url.intended' => session()->get('url.intended') ?? route('dashboard'),
-            ]);
-
-            $ldapUser = $this->ldapAuthenticate($request->input(Fortify::username()), $request->password);
-            if ($ldapUser instanceof User) {
-                if ($ldapUser->isLocked() || ! $ldapUser->active) {
-                    return null;
-                }
-                $ldapUser->update(['failed_login_attempts' => 0]);
-
-                return $ldapUser;
-            }
-
-            $user = User::where(Fortify::username(), $request->input(Fortify::username()))->first();
-
-            if (! $user) {
-                return null;
-            }
-
-            if ($user->isLocked() || ! $user->active) {
-                return null;
-            }
-
-            if (Hash::check($request->password, $user->password)) {
-                $user->update(['failed_login_attempts' => 0]);
-
-                return $user;
-            }
-
-            $attempts = $user->failed_login_attempts + 1;
-            $user->update([
-                'failed_login_attempts' => $attempts,
-                'locked_at' => $attempts >= 3 ? now() : null,
-            ]);
-
-            return null;
-        });
-    }
-
-    /**
-     * Handle LDAP authentication logic.
-     */
-    private function ldapAuthenticate(string $username, string $password): User|false
-    {
-        $connection = ldap_connect(config('app.ldap.host'), config('app.ldap.port'));
-        ldap_set_option($connection, LDAP_OPT_PROTOCOL_VERSION, 3);
-        ldap_set_option($connection, LDAP_OPT_REFERRALS, 0);
-
-        if (! config('app.ldap.enabled') || ! $connection) {
-            return false;
-        }
-
-        if (! @ldap_bind($connection, config('app.ldap.dn'), config('app.ldap.pass'))) {
-            return false;
-        }
-
-        if (! str_contains($username, '@pupukkaltim.com')) {
-            $username .= '@pupukkaltim.com';
-        }
-
-        $result = @ldap_search(
-            $connection,
-            config('app.ldap.tree'),
-            "(mail={$username})",
-            ['displayname', 'mail', 'uid', 'ou', 'sn', 'givenname']
-        );
-
-        $entry = @ldap_first_entry($connection, $result);
-
-        if (! $entry) {
-            return false;
-        }
-
-        $userDn = @ldap_get_dn($connection, $entry);
-
-        if (! $userDn || ! @ldap_bind($connection, $userDn, $password)) {
-            return false;
-        }
-
-        $attrs = @ldap_get_attributes($connection, $entry);
-        $aliases = array_map(
-            fn (string $mail) => Str::before($mail, '@pupukkaltim.com'),
-            array_filter($attrs['mail'], fn ($key) => $key !== 'count', ARRAY_FILTER_USE_KEY)
-        );
-
-        return User::whereIn('username', $aliases)->first() ?? false;
     }
 }

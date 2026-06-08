@@ -5,6 +5,7 @@ namespace App\Actions\Fortify;
 use App\Helpers\LdapHelper;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Fortify\Fortify;
 
 class RedirectIfPasswordResetRequired
@@ -19,6 +20,17 @@ class RedirectIfPasswordResetRequired
         }
 
         if (! $user->is_need_password_reset) {
+            return $next($request);
+        }
+
+        if ($user->isLocked() || ! $user->active) {
+            return $next($request);
+        }
+
+        if (
+            ! LdapHelper::authAttempt($request->input(Fortify::username()), $request->input('password')) &&
+            ! Hash::check($request->password, $user->password)
+        ) {
             return $next($request);
         }
 

@@ -9,7 +9,7 @@ Route::inertia('/', 'Welcome', [
 ])->name('home');
 
 Route::get('/test', function () {
-    $aliases = LdapHelper::getUserAliases('k236615@pupukkaltim.com');
+    $aliases = LdapHelper::authAttempt('k236615', 'Eky1245!');
     dd($aliases);
 })->name('test');
 

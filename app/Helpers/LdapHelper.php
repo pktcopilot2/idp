@@ -10,13 +10,7 @@ class LdapHelper
 
     private static function ldapConfig(): array
     {
-        return [
-            'host' => config('app.ldap.host'),
-            'port' => config('app.ldap.port', 389),
-            'dn'   => config('app.ldap.dn'),
-            'pass' => config('app.ldap.pass'),
-            'tree' => config('app.ldap.tree'),
-        ];
+        return config('app.ldap');
     }
 
     /**
@@ -25,6 +19,10 @@ class LdapHelper
      */
     private static function ldapConnect(): mixed
     {
+        if (!self::ldapConfig()['enabled']) {
+            return false;
+        }
+
         $cfg  = self::ldapConfig();
         $conn = ldap_connect($cfg['host'], $cfg['port']);
         if (!$conn) {
@@ -664,6 +662,51 @@ class LdapHelper
     public static function userExists($npk)
     {
         return self::findUserByNpk($npk) !== null;
+    }
+
+    /**
+     * Authenticate a user against LDAP using username and password.
+     *
+     * @param string $username NPK/username (with or without @domain)
+     * @param string $password Plaintext password to verify
+     * @return bool Returns true if authentication is successful, false otherwise
+     */
+    public static function authAttempt(string $username, string $password): bool
+    {
+        $cnf = self::ldapConfig();
+        $conn = self::ldapConnect();
+
+        if (! $conn) {
+            return false;
+        }
+
+        ldap_set_option($conn, LDAP_OPT_PROTOCOL_VERSION, 3);
+        ldap_set_option($conn, LDAP_OPT_REFERRALS, 0);
+
+        if (! str_contains($username, '@pupukkaltim.com')) {
+            $username .= '@pupukkaltim.com';
+        }
+
+        $result = @ldap_search(
+            $conn,
+            $cnf['tree'],
+            "(mail={$username})",
+            ['displayname', 'mail', 'uid', 'ou', 'sn', 'givenname']
+        );
+
+        $entry = @ldap_first_entry($conn, $result);
+
+        if (! $entry) {
+            return false;
+        }
+
+        $userDn = @ldap_get_dn($conn, $entry);
+
+        if (! $userDn || ! @ldap_bind($conn, $userDn, $password)) {
+            return false;
+        }
+
+        return true;
     }
 
     private static function concat_with_pkt_email($username)

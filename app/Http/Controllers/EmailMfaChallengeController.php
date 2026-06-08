@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Features\EmailMfa;
 use App\Models\User;
 use App\Notifications\EmailMfaCode;
 use Illuminate\Http\Request;
@@ -9,12 +10,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Laravel\Pennant\Feature;
 
 class EmailMfaChallengeController extends Controller
 {
     public function create(Request $request)
     {
-        if (! $request->session()->has('email_mfa.id')) {
+        if (! $request->session()->has('email_mfa.id') || ! Feature::for(null)->active(EmailMfa::class)) {
             return redirect()->route('login');
         }
 

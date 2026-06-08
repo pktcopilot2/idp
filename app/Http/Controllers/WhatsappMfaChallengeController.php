@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Features\WhatsAppMfa;
 use App\Models\User;
 use App\Services\WhatsappOtpSender;
 use Illuminate\Http\Request;
@@ -9,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Laravel\Pennant\Feature;
 
 class WhatsappMfaChallengeController extends Controller
 {
@@ -18,7 +20,7 @@ class WhatsappMfaChallengeController extends Controller
 
     public function create(Request $request)
     {
-        if (! $request->session()->has('whatsapp_mfa.id')) {
+        if (! $request->session()->has('whatsapp_mfa.id') || ! Feature::for(null)->active(WhatsAppMfa::class)) {
             return redirect()->route('login');
         }
 

@@ -35,7 +35,7 @@ class WhatsappOtpSender
                     'body_params' => [
                         [
                             'model' => 1,
-                            'value' => $user->name,
+                            'value' => $code,
                             'param_type' => 'body',
                         ],
                     ],

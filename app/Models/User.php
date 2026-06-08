@@ -64,7 +64,8 @@ class User extends Authenticatable implements OAuthenticatable
 
     public function isLocked(): bool
     {
-        return $this->locked_at !== null;
+        $lockedAt = $this->getRawOriginal('locked_at');
+        return $lockedAt !== null && $lockedAt !== "";
     }
 
     public function sessions(): HasMany
