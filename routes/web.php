@@ -9,8 +9,7 @@ Route::inertia('/', 'Welcome', [
 ])->name('home');
 
 Route::get('/test', function () {
-    $aliases = LdapHelper::authAttempt('k236615', 'Eky1245!');
-    dd($aliases);
+    // ...
 })->name('test');
 
 Route::middleware(['auth', 'verified'])->group(function () {

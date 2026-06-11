@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import TextLink from '@/components/TextLink.vue';
@@ -12,11 +13,13 @@ import { store } from '@/routes/login';
 defineOptions({
     layout: {
         title: 'Log in to your account',
-        description: 'Enter your username and password below to log in',
+        description: 'Enter your credentials to continue',
     },
 });
 
-defineProps<{
+const props = defineProps<{
+    authenticationMode: 'password' | 'passwordless';
+    usesPasswordAuthentication: boolean;
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
@@ -28,6 +31,18 @@ defineProps<{
         name: string;
     } | null;
 }>();
+
+const loginDescription = computed<string>(() => {
+    if (props.usesPasswordAuthentication) {
+        return 'Enter your username and password below to log in';
+    }
+
+    return 'Enter your username below to continue with your configured MFA or 2FA method';
+});
+
+const submitLabel = computed<string>(() => {
+    return props.usesPasswordAuthentication ? 'Log in' : 'Continue';
+});
 </script>
 
 <template>
@@ -58,6 +73,10 @@ defineProps<{
         <input type="hidden" name="_token" :value="csrfToken" />
 
         <div class="grid gap-6">
+            <p class="text-sm text-muted-foreground">
+                {{ loginDescription }}
+            </p>
+
             <div class="grid gap-2">
                 <Label for="username">Username</Label>
                 <Input
@@ -73,7 +92,7 @@ defineProps<{
                 <InputError :message="errors?.username" />
             </div>
 
-            <div class="grid gap-2">
+            <div v-if="usesPasswordAuthentication" class="grid gap-2">
                 <div class="flex items-center justify-between">
                     <Label for="password">Password</Label>
                     <TextLink
@@ -109,7 +128,7 @@ defineProps<{
                 :tabindex="4"
                 data-test="login-button"
             >
-                Log in
+                {{ submitLabel }}
             </Button>
 
             <div class="relative">

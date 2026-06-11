@@ -6,6 +6,7 @@ use App\Actions\Fortify\Authenticate;
 use App\Actions\Fortify\ConfirmPassword;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\RedirectIfEmailMfaRequired;
+use App\Actions\Fortify\RedirectIfPasswordlessAuthenticationRequired;
 use App\Actions\Fortify\RedirectIfWhatsappMfaRequired;
 use App\Actions\Fortify\RedirectIfPasswordResetRequired;
 use App\Actions\Fortify\ResetUserPassword;
@@ -13,6 +14,7 @@ use App\Features\EmailMfa;
 use App\Features\TwoFactorAuthentication as TwoFactorAuthenticationFeature;
 use App\Features\WhatsAppMfa;
 use App\Http\Responses\TwoFactorLoginResponse;
+use App\Http\Requests\Auth\LoginRequest as AppLoginRequest;
 use App\Models\Passport\Client as OauthClient;
 use Laravel\Fortify\Actions\AttemptToAuthenticate;
 use Laravel\Fortify\Actions\CanonicalizeUsername;
@@ -28,6 +30,7 @@ use Inertia\Inertia;
 use Laravel\Fortify\Contracts\TwoFactorLoginResponse as TwoFactorLoginResponseContract;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
+use Laravel\Fortify\Http\Requests\LoginRequest as FortifyLoginRequest;
 use Laravel\Pennant\Feature;
 
 class FortifyServiceProvider extends ServiceProvider
@@ -37,6 +40,7 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(FortifyLoginRequest::class, AppLoginRequest::class);
         $this->app->singleton(TwoFactorLoginResponseContract::class, TwoFactorLoginResponse::class);
     }
 
@@ -96,6 +100,8 @@ class FortifyServiceProvider extends ServiceProvider
             }
 
             return Inertia::render('auth/Login', [
+                'authenticationMode' => config('authentication.mode'),
+                'usesPasswordAuthentication' => config('authentication.mode') === 'password',
                 'canResetPassword' => Features::enabled(Features::resetPasswords()),
                 'canRegister' => Features::enabled(Features::registration()),
                 'message' => $request->session()->get('message'),
@@ -150,6 +156,14 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureAuthentication(): void
     {
         Fortify::loginThrough(function (Request $request) {
+            if (config('authentication.mode') === 'passwordless') {
+                return [
+                    config('fortify.limiters.login') ? null : EnsureLoginIsNotThrottled::class,
+                    config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
+                    RedirectIfPasswordlessAuthenticationRequired::class,
+                ];
+            }
+
             return [
                 config('fortify.limiters.login') ? null : EnsureLoginIsNotThrottled::class,
                 config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
