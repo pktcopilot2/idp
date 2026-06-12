@@ -144,10 +144,12 @@ return [
     */
 
     'features' => [
+        Features::passkeys([
+            'confirm' => true,
+        ]),
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,
-            // 'window' => 0
         ]),
     ],
 

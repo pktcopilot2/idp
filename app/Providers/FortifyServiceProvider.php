@@ -15,6 +15,7 @@ use App\Features\TwoFactorAuthentication as TwoFactorAuthenticationFeature;
 use App\Features\WhatsAppMfa;
 use App\Http\Responses\TwoFactorLoginResponse;
 use App\Http\Requests\Auth\LoginRequest as AppLoginRequest;
+use App\Models\User;
 use App\Models\Passport\Client as OauthClient;
 use Laravel\Fortify\Actions\AttemptToAuthenticate;
 use Laravel\Fortify\Actions\CanonicalizeUsername;
@@ -26,11 +27,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\TwoFactorLoginResponse as TwoFactorLoginResponseContract;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\Http\Requests\LoginRequest as FortifyLoginRequest;
+use Laravel\Passkeys\Passkey;
+use Laravel\Passkeys\Passkeys;
 use Laravel\Pennant\Feature;
 
 class FortifyServiceProvider extends ServiceProvider
@@ -53,6 +57,7 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureViews();
         $this->configureRateLimiting();
         $this->configureAuthentication();
+        $this->configurePasskeyAuthorization();
     }
 
     /**
@@ -174,6 +179,28 @@ class FortifyServiceProvider extends ServiceProvider
                 AttemptToAuthenticate::class,
                 PrepareAuthenticatedSession::class,
             ];
+        });
+    }
+
+    /**
+     * Configure passkey login authorization.
+     */
+    private function configurePasskeyAuthorization(): void
+    {
+        Passkeys::authorizeLoginUsing(function (Request $request, User $user, Passkey $passkey): bool {
+            if ($user->isLocked()) {
+                throw ValidationException::withMessages([
+                    'credential' => __('This account has been locked.'),
+                ]);
+            }
+
+            if (! $user->active) {
+                throw ValidationException::withMessages([
+                    'credential' => __('This account is inactive.'),
+                ]);
+            }
+
+            return true;
         });
     }
 }

@@ -34,6 +34,17 @@
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
+        @if (request()->routeIs('login'))
+        <script defer="" src="https://pushme.pupuk-indonesia.com/helpdesk-button.js"></script>
+        @endif
+
+        <style>
+            .helpdesk-floating-btn {
+                width: 64px !important;
+                height: 64px !important;
+            }
+        </style>
+
         @fonts
 
         @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])

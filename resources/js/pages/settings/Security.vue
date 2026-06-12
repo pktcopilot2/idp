@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, router } from '@inertiajs/vue3';
+import { Passkeys } from '@laravel/passkeys';
 import { ShieldCheck } from 'lucide-vue-next';
 import { onUnmounted, ref, watch } from 'vue';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
@@ -25,6 +26,13 @@ import { disable, enable } from '@/routes/two-factor';
 
 type Props = {
     canManageTwoFactor?: boolean;
+    canManagePasskeys?: boolean;
+    passkeys?: Array<{
+        id: string;
+        name: string;
+        createdAt: string | null;
+        lastUsedAt: string | null;
+    }>;
     requiresConfirmation?: boolean;
     twoFactorEnabled?: boolean;
     emailMfaFeatureEnabled?: boolean;
@@ -40,6 +48,8 @@ type Props = {
 
 const props = withDefaults(defineProps<Props>(), {
     canManageTwoFactor: false,
+    canManagePasskeys: false,
+    passkeys: () => [],
     requiresConfirmation: false,
     twoFactorEnabled: false,
     emailMfaFeatureEnabled: false,
@@ -67,18 +77,48 @@ const { hasSetupData, clearTwoFactorAuthData } = useTwoFactorAuth();
 const showSetupModal = ref<boolean>(false);
 const showEmailMfaModal = ref<boolean>(props.emailMfaSetupPending);
 const showWhatsappMfaModal = ref<boolean>(props.whatsappMfaSetupPending);
+const passkeyName = ref<string>('');
+const passkeyError = ref<string>('');
+const passkeyRegistering = ref<boolean>(false);
 
 watch(
     () => props.emailMfaSetupPending,
-    (val) => { showEmailMfaModal.value = val; },
+    (val) => {
+        showEmailMfaModal.value = val;
+    },
 );
 
 watch(
     () => props.whatsappMfaSetupPending,
-    (val) => { showWhatsappMfaModal.value = val; },
+    (val) => {
+        showWhatsappMfaModal.value = val;
+    },
 );
 
 onUnmounted(() => clearTwoFactorAuthData());
+
+const registerPasskey = async (): Promise<void> => {
+    passkeyError.value = '';
+    passkeyRegistering.value = true;
+
+    try {
+        await Passkeys.register({
+            name: passkeyName.value.trim() || 'My Device',
+        });
+
+        passkeyName.value = '';
+
+        router.reload({
+            only: ['canManagePasskeys', 'passkeys'],
+        });
+    } catch (error) {
+        passkeyError.value = error instanceof Error
+            ? error.message
+            : 'Unable to register passkey.';
+    } finally {
+        passkeyRegistering.value = false;
+    }
+};
 </script>
 
 <template>
@@ -217,6 +257,79 @@ onUnmounted(() => clearTwoFactorAuthData());
             :requiresConfirmation="requiresConfirmation"
             :twoFactorEnabled="twoFactorEnabled"
         />
+    </div>
+
+    <div v-if="canManagePasskeys" class="space-y-6">
+        <Heading
+            variant="small"
+            title="Passkeys"
+            description="Sign in using Touch ID, Face ID, Windows Hello, or a security key"
+        />
+
+        <div class="space-y-4">
+            <p class="text-sm text-muted-foreground">
+                Register a passkey on this device to enable passwordless sign-in.
+            </p>
+
+            <div class="grid gap-2 sm:max-w-sm">
+                <Label for="passkey_name">Passkey name</Label>
+                <Input
+                    id="passkey_name"
+                    v-model="passkeyName"
+                    placeholder="MacBook Air"
+                    autocomplete="off"
+                />
+            </div>
+
+            <Button
+                type="button"
+                :disabled="passkeyRegistering"
+                @click="registerPasskey"
+            >
+                {{ passkeyRegistering ? 'Registering passkey...' : 'Register new passkey' }}
+            </Button>
+
+            <InputError :message="passkeyError" />
+        </div>
+
+        <div class="space-y-3">
+            <p v-if="!passkeys.length" class="text-sm text-muted-foreground">
+                You do not have any registered passkeys yet.
+            </p>
+
+            <div
+                v-for="passkey in passkeys"
+                :key="passkey.id"
+                class="rounded-lg border p-4"
+            >
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="space-y-1">
+                        <p class="font-medium">{{ passkey.name }}</p>
+                        <p class="text-xs text-muted-foreground">
+                            Added: {{ passkey.createdAt ? new Date(passkey.createdAt).toLocaleString() : '-' }}
+                        </p>
+                        <p class="text-xs text-muted-foreground">
+                            Last used: {{ passkey.lastUsedAt ? new Date(passkey.lastUsedAt).toLocaleString() : 'Never' }}
+                        </p>
+                    </div>
+
+                    <Form
+                        :action="`/user/passkeys/${passkey.id}`"
+                        method="post"
+                        #default="{ processing }"
+                    >
+                        <input type="hidden" name="_method" value="DELETE">
+                        <Button
+                            type="submit"
+                            variant="destructive"
+                            :disabled="processing"
+                        >
+                            Remove
+                        </Button>
+                    </Form>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div v-if="emailMfaFeatureEnabled" class="space-y-6">

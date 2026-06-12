@@ -24,6 +24,10 @@ class SsoController extends Controller
             return redirect()->route('login')->with(['message' => 'User not authorized.']);
         }
 
+        if ($localUser->locked_at || !$localUser->active) {
+            return redirect()->route('login')->with(['message' => 'Your account is locked or inactive. Please contact support.']);
+        }
+
         session(['keycloak_token' => $user->token]);
         Auth::login($localUser, true);
 
@@ -43,6 +47,10 @@ class SsoController extends Controller
         $localUser = \App\Models\User::query()->where('username', $username)->first();
         if (!$localUser) {
             return redirect()->route('login')->with(['message' => 'User not authorized.']);
+        }
+
+        if ($localUser->locked_at || !$localUser->active) {
+            return redirect()->route('login')->with(['message' => 'Your account is locked or inactive. Please contact support.']);
         }
 
         session(['fusionauth_token' => $user->token]);

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Passkeys } from '@laravel/passkeys';
+import { computed, onMounted, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import TextLink from '@/components/TextLink.vue';
@@ -9,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { store } from '@/routes/login';
+import { FingerprintIcon } from 'lucide-vue-next';
 
 defineOptions({
     layout: {
@@ -43,6 +45,37 @@ const loginDescription = computed<string>(() => {
 const submitLabel = computed<string>(() => {
     return props.usesPasswordAuthentication ? 'Log in' : 'Continue';
 });
+
+const isPasskeySupported = ref<boolean>(false);
+const isPasskeyProcessing = ref<boolean>(false);
+const passkeyError = ref<string>('');
+
+onMounted(() => {
+    isPasskeySupported.value = Passkeys.isSupported();
+});
+
+const loginWithPasskey = async (): Promise<void> => {
+    passkeyError.value = '';
+    isPasskeyProcessing.value = true;
+
+    try {
+        const response = await Passkeys.verify();
+
+        if (response.redirect) {
+            window.location.href = response.redirect;
+
+            return;
+        }
+
+        window.location.reload();
+    } catch (error) {
+        passkeyError.value = error instanceof Error
+            ? error.message
+            : 'Unable to log in using passkey.';
+    } finally {
+        isPasskeyProcessing.value = false;
+    }
+};
 </script>
 
 <template>
@@ -86,7 +119,7 @@ const submitLabel = computed<string>(() => {
                     required
                     autofocus
                     :tabindex="1"
-                    autocomplete="username"
+                    autocomplete="username webauthn"
                     placeholder="Enter your username"
                 />
                 <InputError :message="errors?.username" />
@@ -131,6 +164,22 @@ const submitLabel = computed<string>(() => {
                 {{ submitLabel }}
             </Button>
 
+            <Button
+                v-if="isPasskeySupported"
+                type="button"
+                variant="secondary"
+                class="w-full"
+                :disabled="isPasskeyProcessing"
+                :tabindex="5"
+                data-test="login-passkey-button"
+                @click="loginWithPasskey"
+            >
+                <!-- using icon -->
+                <FingerprintIcon class="mr-2 h-5 w-5" />
+                {{ isPasskeyProcessing ? 'Signing in with passkey...' : 'Sign in with passkey' }}
+            </Button>
+            <InputError :message="passkeyError" />
+
             <div class="relative">
                 <div class="absolute inset-0 flex items-center">
                     <span class="w-full border-t" />
@@ -146,7 +195,7 @@ const submitLabel = computed<string>(() => {
                 type="button"
                 variant="outline"
                 class="w-full"
-                :tabindex="5"
+                :tabindex="6"
                 data-test="login-keycloak-button"
             >
                 Login with Keycloak (SSO Pusri)
@@ -159,7 +208,7 @@ const submitLabel = computed<string>(() => {
                 type="button"
                 variant="outline"
                 class="w-full bg-linear-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600"
-                :tabindex="6"
+                :tabindex="7"
                 data-test="login-fusionauth-button"
             >
                 Login with FusionAuth (PI Identik)
@@ -171,7 +220,7 @@ const submitLabel = computed<string>(() => {
             v-if="canRegister"
         >
             Don't have an account?
-            <TextLink href="/register" :tabindex="6">Sign up</TextLink>
+            <TextLink href="/register" :tabindex="8">Sign up</TextLink>
         </div>
     </form>
 </template>

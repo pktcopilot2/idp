@@ -22,6 +22,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Laravel\Fortify\Features;
 use Laravel\Pennant\Feature;
+use Laravel\Passkeys\Passkey;
 
 class SecurityController extends Controller implements HasMiddleware
 {
@@ -41,9 +42,12 @@ class SecurityController extends Controller implements HasMiddleware
      */
     public function edit(TwoFactorAuthenticationRequest $request): Response
     {
+        $canManagePasskeys = Features::enabled(Features::passkeys());
+
         $props = [
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication()
                 && Feature::for(null)->active(TwoFactorAuthenticationFeature::class),
+            'canManagePasskeys' => $canManagePasskeys,
             'emailMfaFeatureEnabled' => Feature::for(null)->active(EmailMfa::class),
             'whatsappMfaFeatureEnabled' => Feature::for(null)->active(WhatsAppMfa::class),
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
@@ -53,6 +57,18 @@ class SecurityController extends Controller implements HasMiddleware
             'whatsappMfaSetupPending' => $request->session()->get('whatsapp_mfa_setup.id') === $request->user()->getKey(),
             'whatsappMfaSetupPendingNumber' => $request->session()->get('whatsapp_mfa_setup.whatsapp_number'),
             'whatsappNumber' => $request->user()->whatsapp_number,
+            'passkeys' => $canManagePasskeys
+                ? $request->user()->passkeys()
+                    ->latest('id')
+                    ->get(['id', 'name', 'created_at', 'last_used_at'])
+                    ->map(static fn (Passkey $passkey) => [
+                        'id' => (string) $passkey->id,
+                        'name' => (string) $passkey->name,
+                        'createdAt' => $passkey->created_at?->toIso8601String(),
+                        'lastUsedAt' => $passkey->last_used_at?->toIso8601String(),
+                    ])
+                    ->values()
+                : [],
         ];
 
         if (Features::canManageTwoFactorAuthentication()
