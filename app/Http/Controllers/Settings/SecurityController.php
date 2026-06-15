@@ -172,10 +172,14 @@ class SecurityController extends Controller implements HasMiddleware
         abort_unless(Feature::for(null)->active(WhatsAppMfa::class), 403);
 
         $request->validate([
-            'whatsapp_number' => ['required', 'string', 'max:30'],
+            'whatsapp_number' => ['required', 'string', 'max:30', 'regex:/^08[0-9]{8,}$/'],
+        ], [
+            'whatsapp_number.regex' => __('The WhatsApp number must start with "08" and contain 10 to 12 digits.'),
         ]);
 
+        // update user's whatsapp number before sending OTP to ensure the correct number is used, but do not enable MFA yet until verification is successful
         $user = $request->user();
+        $user->update(['whatsapp_number' => $request->input('whatsapp_number')]);
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $whatsappNumber = $request->string('whatsapp_number')->toString();
 

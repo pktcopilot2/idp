@@ -1,6 +1,5 @@
 <?php
 
-use App\Helpers\LdapHelper;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 

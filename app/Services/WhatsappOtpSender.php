@@ -29,8 +29,8 @@ class WhatsappOtpSender
                     'callback_url' => null,
                     'metadata' => [],
                     'recipient' => [
-                        'type' => 'npk',
-                        'value' => $user->username,
+                        'type' => 'phone',
+                        'value' => $user->whatsapp_number,
                     ],
                     'body_params' => [
                         [
@@ -43,11 +43,13 @@ class WhatsappOtpSender
 
             Log::info('Sent WhatsApp MFA OTP.', [
                 'username' => $user->username,
+                'whatsapp_number' => $user->whatsapp_number,
                 'code' => $code,
             ]);
         } catch (Throwable $e) {
             Log::warning('Failed to send WhatsApp MFA OTP.', [
                 'username' => $user->username,
+                'whatsapp_number' => $user->whatsapp_number,
                 'error' => $e->getMessage(),
             ]);
         }

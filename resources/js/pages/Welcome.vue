@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
-import { dashboard, login, register } from '@/routes';
+import { dashboard, login } from '@/routes';
 
 withDefaults(
     defineProps<{
@@ -52,13 +52,6 @@ withDefaults(
                     >
                         Sign in
                     </Link>
-                    <Link
-                        v-if="canRegister"
-                        :href="register().url"
-                        class="inline-flex h-9 items-center rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                    >
-                        Get started
-                    </Link>
                 </template>
             </nav>
         </header>
@@ -93,13 +86,6 @@ withDefaults(
                     class="inline-flex h-11 items-center rounded-xl bg-indigo-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600"
                 >
                     Sign in to your account
-                </Link>
-                <Link
-                    v-if="canRegister"
-                    :href="register().url"
-                    class="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                    Create an account
                 </Link>
             </div>
 

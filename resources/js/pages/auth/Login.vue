@@ -207,20 +207,6 @@ const firstError = (field: string): string | undefined => {
                 Log in
             </Button>
 
-            <Button
-                v-if="isPasskeySupported"
-                type="button"
-                variant="secondary"
-                class="w-full"
-                :disabled="isPasskeyProcessing"
-                :tabindex="5"
-                data-test="login-passkey-button"
-                @click="loginWithPasskey"
-            >
-                <FingerprintIcon class="mr-2 h-5 w-5" />
-                {{ isPasskeyProcessing ? 'Signing in with passkey...' : 'Sign in with passkey' }}
-            </Button>
-            <InputError :message="passkeyError" />
         </div>
 
         <div
@@ -272,6 +258,21 @@ const firstError = (field: string): string | undefined => {
             >
                 Continue
             </Button>
+
+            <Button
+                v-if="isPasskeySupported"
+                type="button"
+                variant="secondary"
+                class="w-full"
+                :disabled="isPasskeyProcessing"
+                :tabindex="5"
+                data-test="login-passkey-button"
+                @click="loginWithPasskey"
+            >
+                <FingerprintIcon class="mr-2 h-5 w-5" />
+                {{ isPasskeyProcessing ? 'Signing in with passkey...' : 'Sign in with passkey' }}
+            </Button>
+            <InputError :message="passkeyError" />
         </div>
 
         <div
