@@ -11,12 +11,12 @@ class SsoController extends Controller
 {
     public function redirectToKeycloak()
     {
-        return Socialite::driver('keycloak')->redirect();
+        return $this->socialiteDriver('keycloak')->redirect();
     }
 
     public function handleKeycloakCallback(Request $request)
     {
-        $user = Socialite::driver('keycloak')->stateless()->user();
+        $user = $this->socialiteDriverForCallback('keycloak')->user();
         $username = $user->user['preferred_username'];
 
         $localUser = \App\Models\User::query()->where('username', $username)->first();
@@ -36,12 +36,12 @@ class SsoController extends Controller
 
     public function redirectToFusionauth()
     {
-        return Socialite::driver('fusionauth')->redirect();
+        return $this->socialiteDriver('fusionauth')->redirect();
     }
 
     public function handleFusionauthCallback(Request $request)
     {
-        $user = Socialite::driver('fusionauth')->stateless()->user();
+        $user = $this->socialiteDriverForCallback('fusionauth')->user();
         $username = optional($user->user)['preferred_username'];
 
         $localUser = \App\Models\User::query()->where('username', $username)->first();
@@ -89,5 +89,27 @@ class SsoController extends Controller
         }
 
         return redirect()->route('login');
+    }
+
+    protected function socialiteDriver(string $provider)
+    {
+        $driver = Socialite::driver($provider);
+
+        if (config("services.{$provider}.pkce", false) && method_exists($driver, 'enablePKCE')) {
+            $driver->enablePKCE();
+        }
+
+        return $driver;
+    }
+
+    protected function socialiteDriverForCallback(string $provider)
+    {
+        $driver = $this->socialiteDriver($provider);
+
+        if (config("services.{$provider}.stateless", true) && method_exists($driver, 'stateless')) {
+            $driver->stateless();
+        }
+
+        return $driver;
     }
 }
