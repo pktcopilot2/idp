@@ -13,6 +13,8 @@ type OAuthClient = {
     grant_types: string[] | string;
     redirect_uris: string[] | string;
     login_uri: string | null;
+    confidential: boolean;
+    pkce_enabled: boolean;
     revoked: boolean;
     created_at: string;
 };
@@ -149,6 +151,20 @@ function restoreClient() {
 
         <!-- Client details -->
         <div class="rounded-lg border divide-y">
+            <div class="px-4 py-3">
+                <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Client Type</p>
+                <Badge :variant="client.confidential ? 'default' : 'secondary'" class="mt-1.5">
+                    {{ client.confidential ? 'Confidential' : 'Public' }}
+                </Badge>
+            </div>
+
+            <div class="px-4 py-3">
+                <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">PKCE</p>
+                <Badge :variant="client.pkce_enabled ? 'default' : 'secondary'" class="mt-1.5">
+                    {{ client.pkce_enabled ? 'Enabled' : 'Disabled' }}
+                </Badge>
+            </div>
+
             <div class="px-4 py-3">
                 <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Grant Types</p>
                 <div class="mt-1.5 flex flex-wrap gap-1">

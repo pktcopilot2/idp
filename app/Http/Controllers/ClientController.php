@@ -70,7 +70,9 @@ class ClientController extends Controller
 
     public function store(StoreClientRequest $request): RedirectResponse
     {
-        $plainSecret = $request->boolean('confidential') ? Str::random(40) : null;
+        $confidential = $request->boolean('confidential', true);
+        $pkceEnabled = $request->boolean('pkce_enabled', false);
+        $plainSecret = $confidential ? Str::random(40) : null;
 
         $client = new Client;
         $client->name = $request->name;
@@ -78,6 +80,7 @@ class ClientController extends Controller
         $client->grant_types = $request->grant_types;
         $client->login_uri = $request->input('login_uri') ?: null;
         $client->secret = $plainSecret;
+        $client->pkce_required = $pkceEnabled;
         $client->revoked = false;
         $client->save();
 
@@ -91,7 +94,13 @@ class ClientController extends Controller
     public function show(Client $client): Response
     {
         return Inertia::render('clients/Show', [
-            'client' => $client->only(['id', 'name', 'grant_types', 'redirect_uris', 'login_uri', 'revoked', 'created_at']),
+            'client' => array_merge(
+                $client->only(['id', 'name', 'grant_types', 'redirect_uris', 'login_uri', 'revoked', 'created_at']),
+                [
+                    'pkce_enabled' => (bool) ($client->pkce_required ?? false),
+                    'confidential' => $client->confidential(),
+                ],
+            ),
             'secret' => session('client_secret'),
             'roles_count' => \Spatie\Permission\Models\Role::where('client_id', $client->id)->count(),
         ]);
@@ -100,17 +109,40 @@ class ClientController extends Controller
     public function edit(Client $client): Response
     {
         return Inertia::render('clients/Edit', [
-            'client' => $client->only(['id', 'name', 'grant_types', 'redirect_uris', 'login_uri']),
+            'client' => array_merge(
+                $client->only(['id', 'name', 'grant_types', 'redirect_uris', 'login_uri']),
+                [
+                    'pkce_enabled' => (bool) ($client->pkce_required ?? false),
+                    'confidential' => $client->confidential(),
+                ],
+            ),
         ]);
     }
 
     public function update(UpdateClientRequest $request, Client $client): RedirectResponse
     {
+        $confidential = $request->boolean('confidential', $client->confidential());
+        $pkceEnabled = $request->boolean('pkce_enabled', (bool) ($client->pkce_required ?? false));
+
         $client->name = $request->name;
         $client->grant_types = $request->grant_types;
         $client->redirect_uris = $request->input('redirect_uris', []);
         $client->login_uri = $request->login_uri;
+        $client->pkce_required = $pkceEnabled;
+
+        $generatedSecret = null;
+        if (! $confidential) {
+            $client->secret = null;
+        } elseif (! $client->confidential()) {
+            $generatedSecret = Str::random(40);
+            $client->secret = $generatedSecret;
+        }
+
         $client->save();
+
+        if ($generatedSecret) {
+            session()->flash('client_secret', $generatedSecret);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Client updated successfully.']);
 

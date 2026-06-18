@@ -31,7 +31,7 @@ class HandleInvalidOauthClient
         }
 
         $client = Client::query()
-            ->select(['id', 'revoked'])
+            ->select(['id', 'revoked', 'pkce_required'])
             ->find($clientId);
 
         if (! $client || (bool) $client->revoked) {
@@ -40,6 +40,17 @@ class HandleInvalidOauthClient
                 'message' => 'Client authentication failed. This application may have been revoked or is no longer valid.',
                 'client_id' => $clientId,
             ])->toResponse($request)->setStatusCode(401);
+        }
+
+        $responseType = (string) $request->query('response_type', '');
+        $codeChallenge = (string) $request->query('code_challenge', '');
+
+        if ($responseType === 'code' && (bool) ($client->pkce_required ?? false) && $codeChallenge === '') {
+            return Inertia::render('auth/OAuthClientInvalid', [
+                'error' => 'invalid_request',
+                'message' => 'This client requires PKCE. Please provide code_challenge in the authorize request.',
+                'client_id' => $clientId,
+            ])->toResponse($request)->setStatusCode(400);
         }
 
         return $next($request);

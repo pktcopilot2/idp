@@ -15,9 +15,11 @@ import { index as rolesIndex } from '@/routes/clients/roles';
 type OAuthClient = {
     id: string;
     name: string;
+    confidential: boolean;
     grant_types: string[] | string;
     redirect_uris: string[] | string;
     login_uri: string | null;
+    pkce_enabled: boolean;
 };
 
 const props = defineProps<{
@@ -55,6 +57,8 @@ function parseArray(value: string[] | string): string[] {
 
 const form = useForm({
     name: props.client.name,
+    confidential: props.client.confidential,
+    pkce_enabled: props.client.pkce_enabled,
     grant_types: parseArray(props.client.grant_types) as GrantType[],
     redirect_uris: parseArray(props.client.redirect_uris).length > 0
         ? parseArray(props.client.redirect_uris)
@@ -87,6 +91,8 @@ function removeRedirectUri(index: number) {
 function submit() {
     const payload = {
         name: form.name,
+        confidential: form.confidential,
+        pkce_enabled: form.pkce_enabled,
         grant_types: form.grant_types,
         redirect_uris: needsRedirectUri.value
             ? form.redirect_uris.filter((u) => u.trim() !== '')
@@ -123,6 +129,53 @@ function submit() {
                     :class="{ 'border-destructive': form.errors.name }"
                 />
                 <InputError :message="form.errors.name" />
+            </div>
+
+            <Separator />
+
+            <!-- Confidential -->
+            <div class="space-y-2">
+                <Label class="text-base font-medium">Client type</Label>
+                <div class="flex items-start gap-3 rounded-lg border p-4">
+                    <Checkbox
+                        id="confidential"
+                        :model-value="form.confidential"
+                        @update:model-value="form.confidential = !!$event"
+                        class="mt-0.5"
+                    />
+                    <div class="space-y-1">
+                        <Label for="confidential" class="font-medium cursor-pointer">
+                            Confidential client
+                        </Label>
+                        <p class="text-sm text-muted-foreground">
+                            Uses a client secret. If enabled on a previously public client, a new secret will be generated.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <Separator />
+
+            <!-- PKCE -->
+            <div class="space-y-2">
+                <Label class="text-base font-medium">PKCE</Label>
+                <div class="flex items-start gap-3 rounded-lg border p-4">
+                    <Checkbox
+                        id="pkce_enabled"
+                        :model-value="form.pkce_enabled"
+                        @update:model-value="form.pkce_enabled = !!$event"
+                        class="mt-0.5"
+                    />
+                    <div class="space-y-1">
+                        <Label for="pkce_enabled" class="font-medium cursor-pointer">
+                            Enable PKCE
+                        </Label>
+                        <p class="text-sm text-muted-foreground">
+                            Recommended for modern Authorization Code flow. For public clients, this is required.
+                        </p>
+                    </div>
+                </div>
+                <InputError :message="form.errors.pkce_enabled" />
             </div>
 
             <Separator />

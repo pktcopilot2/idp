@@ -33,6 +33,7 @@ type GrantType = (typeof GRANT_TYPES)[number]['value'];
 const form = useForm({
     name: '',
     confidential: true,
+    pkce_enabled: false,
     grant_types: ['authorization_code', 'refresh_token'] as GrantType[],
     redirect_uris: [''] as string[],
     login_uri: '',
@@ -64,6 +65,7 @@ function submit() {
     const payload = {
         name: form.name,
         confidential: form.confidential,
+        pkce_enabled: form.pkce_enabled,
         grant_types: form.grant_types,
         redirect_uris: needsRedirectUri.value
             ? form.redirect_uris.filter((u) => u.trim() !== '')
@@ -109,7 +111,7 @@ function submit() {
                     <Checkbox
                         id="confidential"
                         :model-value="form.confidential"
-                        @update:model-value="form.confidential = $event"
+                        @update:model-value="form.confidential = !!$event"
                         class="mt-0.5"
                     />
                     <div class="space-y-1">
@@ -117,10 +119,34 @@ function submit() {
                             Confidential client
                         </Label>
                         <p class="text-sm text-muted-foreground">
-                            A client secret will be generated. Use this for server-side apps that can securely store the secret.
+                            Uses a client secret. Keep this enabled for server-side apps that can store secrets securely.
                         </p>
                     </div>
                 </div>
+            </div>
+
+            <Separator />
+
+            <!-- PKCE -->
+            <div class="space-y-2">
+                <Label class="text-base font-medium">PKCE</Label>
+                <div class="flex items-start gap-3 rounded-lg border p-4">
+                    <Checkbox
+                        id="pkce_enabled"
+                        :model-value="form.pkce_enabled"
+                        @update:model-value="form.pkce_enabled = !!$event"
+                        class="mt-0.5"
+                    />
+                    <div class="space-y-1">
+                        <Label for="pkce_enabled" class="font-medium cursor-pointer">
+                            Enable PKCE
+                        </Label>
+                        <p class="text-sm text-muted-foreground">
+                            Recommended for modern Authorization Code flow. For public clients, this is required.
+                        </p>
+                    </div>
+                </div>
+                <InputError :message="form.errors.pkce_enabled" />
             </div>
 
             <Separator />
