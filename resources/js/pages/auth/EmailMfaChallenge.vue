@@ -23,6 +23,28 @@ defineProps<{
 }>();
 
 const code = ref('');
+const canResend = ref(false);
+const countDown = ref(30);
+
+setTimeout(() => {
+    canResend.value = true;
+}, 10000);
+
+const startCountdown = () => {
+    canResend.value = false;
+    countDown.value = 10;
+
+    const interval = setInterval(() => {
+        if (countDown.value > 0) {
+            countDown.value -= 1;
+        } else {
+            canResend.value = true;
+            clearInterval(interval);
+        }
+    }, 1000);
+};
+
+startCountdown();
 </script>
 
 <template>
@@ -67,10 +89,14 @@ const code = ref('');
         >
             <input type="hidden" name="_token" :value="csrfToken" />
             <button
+                :disabled="!canResend"
+                 :class="[
+                    'text-sm underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current',
+                    !canResend ? 'cursor-not-allowed opacity-50' : '',
+                ]"
                 type="submit"
-                class="text-sm text-muted-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current!"
             >
-                Didn't receive a code? Resend
+                Didn't receive a code? Resend <span v-if="!canResend">({{ countDown }}s)</span>
             </button>
         </form>
     </div>

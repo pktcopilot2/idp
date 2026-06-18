@@ -12,11 +12,13 @@ defineOptions({
 
 defineProps<{
     csrfToken: string;
+    post_logout_redirect_uri: string;
+    cancel_redirect_uri: string;
 }>();
 </script>
 
 <template>
-    <Head title="Client Unavailable" />
+    <Head title="Logout Confirmation" />
 
     <!-- confirmasi apakah anda ingin logout -->
     <div class="space-y-5">
@@ -32,9 +34,9 @@ defineProps<{
 
         <div class="flex items-center gap-3">
             <Button as-child>
-                <a href="/">Cancel</a>
+                <a :href="cancel_redirect_uri">Cancel</a>
             </Button>
-            <form method="POST" action="/logout">
+            <form method="POST" :action="`/logout?post_logout_redirect_uri=${post_logout_redirect_uri}`">
                 <input type="hidden" name="_token" :value="csrfToken" />
                 <Button type="submit" variant="outline">Log Out</Button>
             </form>

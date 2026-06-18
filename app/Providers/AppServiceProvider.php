@@ -7,6 +7,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -29,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configurePassport();
+
+        // prefer https
+        // URL::forceScheme('https');
 
         Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
             $event->extendSocialite('keycloak', \SocialiteProviders\Keycloak\Provider::class);

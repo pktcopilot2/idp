@@ -64,6 +64,8 @@ class SsoController extends Controller
         if ($request->isMethod('get')) {
             return Inertia::render('auth/LogoutConfirmation', [
                 'csrfToken' => csrf_token(),
+                'post_logout_redirect_uri' => $request->input('post_logout_redirect_uri', route('login')),
+                'cancel_redirect_uri' => $request->input('cancel_redirect_uri', route('home')),
             ]);
         }
 
@@ -82,6 +84,8 @@ class SsoController extends Controller
         } elseif ($keycloakToken) {
             $keycloakLogoutUrl = Socialite::driver('keycloak')->getLogoutUrl(route('login'), config('services.keycloak.client_id'));
             return redirect($keycloakLogoutUrl);
+        } elseif ($request->input('post_logout_redirect_uri')) {
+            return redirect($request->input('post_logout_redirect_uri'));
         }
 
         return redirect()->route('login');

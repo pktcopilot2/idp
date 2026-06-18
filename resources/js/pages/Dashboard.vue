@@ -34,14 +34,12 @@ const props = defineProps<{
             <h2 class="text-lg font-semibold">My Applications</h2>
             <p class="text-sm text-muted-foreground">Applications you have access to</p>
         </div>
-
         <div v-if="props.clients.length > 0" class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             <a
                 v-for="client in props.clients"
                 :key="client.id"
                 :href="client.url ?? '#'"
                 target="_blank"
-                rel="noopener noreferrer"
                 class="group"
             >
                 <Card class="h-full cursor-pointer transition-shadow hover:shadow-md">
