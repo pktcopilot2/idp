@@ -33,7 +33,7 @@ class UserController extends Controller
      */
     public function usersData(DxDataGridRequest $request): JsonResponse
     {
-        $allowedFields = ['id', 'name', 'email', 'username', 'active', 'locked_at', 'email_mfa_enabled', 'whatsapp_mfa_enabled', 'is_need_password_reset', 'failed_login_attempts'];
+        $allowedFields = ['id', 'name', 'email', 'username', 'active', 'locked_at', 'created_at', 'email_mfa_enabled', 'whatsapp_mfa_enabled', 'is_need_password_reset', 'failed_login_attempts'];
 
         $query = User::query()
             ->withCount('sessions as active_sessions_count')

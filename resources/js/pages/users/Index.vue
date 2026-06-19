@@ -45,8 +45,10 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { dxDataGridBaseProps } from '@/configs/dxDataGridConfig';
+import { useDxGridSelection } from '@/composables/useDxGridSelection';
 import { useDxGridUrlState } from '@/composables/useDxGridUrlState';
 import { createDxRemoteStore } from '@/lib/dxRemoteDataSource';
+import DxGridSelectionBar from '@/components/DxGridSelectionBar.vue';
 import { edit as editRoute, index, show as showRoute } from '@/routes/users';
 
 // ============================ Types ============================
@@ -58,6 +60,7 @@ type UserRow = {
     username: string;
     active: boolean;
     locked_at: string | null;
+    created_at: string;
     email_mfa_enabled: boolean;
     whatsapp_mfa_enabled: boolean;
     is_need_password_reset: boolean;
@@ -122,9 +125,24 @@ const createSessionStore = (userId: number) => {
     return store;
 };
 
+// ============================ Grid selection & refresh ============================
+
+const {
+    gridRef,
+    selectionCount,
+    selectedKeys,
+    selectedRows,
+    onSelectionChanged,
+    clearSelection,
+} = useDxGridSelection<UserRow, number>();
+
 // ============================ State ============================
 
 const { stateStoringProps } = useDxGridUrlState('users');
+
+function refreshGrid() {
+    gridRef.value?.instance?.refresh();
+}
 
 // Assign clients
 const assignUser = ref<UserRow | null>(null);
@@ -191,6 +209,7 @@ function submitAssignClients() {
             },
             onSuccess: () => {
                 assignUser.value = null;
+                refreshGrid();
             },
         },
     );
@@ -223,14 +242,20 @@ function statusBadges(user: UserRow): Array<{ label: string; variant: 'destructi
                 </p>
             </div>
 
-            <DxDataGrid :data-source="userStore" v-bind="dxDataGridBaseProps">
+            <DxGridSelectionBar :count="selectionCount" @clear="clearSelection">
+                <Button variant="destructive" size="sm" class="h-7 gap-1.5 px-2.5 text-xs" @click="console.log('Revoke sessions', selectedKeys)">
+                    <MonitorX class="size-3.5" />
+                    Revoke sessions ({{ selectionCount }})
+                </Button>
+            </DxGridSelectionBar>
+
+            <DxDataGrid
+                ref="gridRef"
+                :data-source="userStore"
+                :on-selection-changed="onSelectionChanged"
+                v-bind="dxDataGridBaseProps"
+            >
                 <DxStateStoring v-bind="stateStoringProps" />
-
-                <DxLoadPanel :enabled="true" :show-indicator="true" :show-pane="true" text="Loading users..." />
-
-                <DxSearchPanel :visible="true" :width="280" placeholder="Search users..." />
-                <DxHeaderFilter :visible="true" />
-                <DxFilterRow :visible="true" apply-filter="auto" />
 
                 <!-- Name -->
                 <DxColumn
@@ -277,6 +302,45 @@ function statusBadges(user: UserRow): Array<{ label: string; variant: 'destructi
                         </span>
                     </div>
                 </template>
+
+                <!-- Active -->
+                <DxColumn
+                    data-field="active"
+                    caption="Active"
+                    width="150"
+                    alignment="center"
+                    cell-template="activeCell"
+                />
+                <template #activeCell="{ data: row }">
+                    <span
+                        :class="[
+                            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                            row.data.active
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+                        ]"
+                    >
+                        {{ row.data.active ? 'Yes' : 'No' }}
+                    </span>
+                </template>
+
+                <!-- Locked At -->
+                <DxColumn
+                    data-field="locked_at"
+                    caption="Locked At"
+                    data-type="date"
+                    format="dd MMM yyyy HH:mm"
+                    width="160"
+                />
+
+                <!-- Created At -->
+                <DxColumn
+                    data-field="created_at"
+                    caption="Created At"
+                    data-type="date"
+                    format="dd MMM yyyy"
+                    width="140"
+                />
 
                 <!-- Active Sessions -->
                 <DxColumn
@@ -332,6 +396,7 @@ function statusBadges(user: UserRow): Array<{ label: string; variant: 'destructi
                             <!-- Revoke sessions -->
                             <Form
                                 v-bind="UserController.destroySessions.form({ id: row.data.id })"
+                                @success="refreshGrid()"
                                 #default="{ processing }"
                             >
                                 <DropdownMenuItem
@@ -351,6 +416,7 @@ function statusBadges(user: UserRow): Array<{ label: string; variant: 'destructi
                             <Form
                                 v-if="row.data.locked_at"
                                 v-bind="UserController.unlock.form({ id: row.data.id })"
+                                @success="refreshGrid()"
                                 #default="{ processing }"
                             >
                                 <DropdownMenuItem
@@ -367,6 +433,7 @@ function statusBadges(user: UserRow): Array<{ label: string; variant: 'destructi
                             <!-- Toggle active -->
                             <Form
                                 v-bind="UserController.toggleActive.form({ id: row.data.id })"
+                                @success="refreshGrid()"
                                 #default="{ processing }"
                             >
                                 <DropdownMenuItem
@@ -394,6 +461,7 @@ function statusBadges(user: UserRow): Array<{ label: string; variant: 'destructi
                                 <DropdownMenuSeparator />
                                 <Form
                                     v-bind="UserController.impersonate.form({ id: row.data.id })"
+                                    @success="refreshGrid()"
                                     #default="{ processing }"
                                 >
                                     <DropdownMenuItem
