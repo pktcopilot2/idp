@@ -33,6 +33,9 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('users/{user}/unlock', [App\Http\Controllers\UserController::class, 'unlock'])->name('users.unlock');
     Route::patch('users/{user}/toggle-active', [App\Http\Controllers\UserController::class, 'toggleActive'])->name('users.toggle-active');
     Route::put('users/{user}/clients', [App\Http\Controllers\UserController::class, 'syncClients'])->name('users.clients.sync');
+    Route::post('users/{user}/impersonate', [App\Http\Controllers\UserController::class, 'impersonate'])->name('users.impersonate');
+
+    Route::post('impersonate/stop', [App\Http\Controllers\UserController::class, 'stopImpersonating'])->name('impersonate.stop');
 
     Route::get('features', [App\Http\Controllers\FeatureFlagController::class, 'index'])->name('features.index');
     Route::patch('features/{feature}', [App\Http\Controllers\FeatureFlagController::class, 'update'])->name('features.update');

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Head, router } from '@inertiajs/vue3';
 import { useDebounceFn } from '@vueuse/core';
-import { ArrowUpDown, ChevronDown, ChevronUp, Globe, Lock, LockOpen, Monitor, MonitorX, MoreHorizontal, Pencil, Search, Smartphone, UserCheck, UserX, Users } from 'lucide-vue-next';
+import { ArrowUpDown, ChevronDown, ChevronUp, Globe, Lock, LockOpen, Monitor, MonitorX, MoreHorizontal, Pencil, Search, Smartphone, UserCheck, UserX, UserRoundPen, Users } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import UserController from '@/actions/App/Http/Controllers/UserController';
 import { Badge } from '@/components/ui/badge';
@@ -425,6 +425,24 @@ function getSessionClients(session: UserSession): string[] {
                                         <Users class="mr-2 h-4 w-4" />
                                         Assign clients
                                     </DropdownMenuItem>
+
+                                    <DropdownMenuSeparator />
+
+                                    <!-- Act as User -->
+                                    <Form
+                                        v-bind="UserController.impersonate.form(user)"
+                                        #default="{ processing }"
+                                    >
+                                        <DropdownMenuItem
+                                            as="button"
+                                            type="submit"
+                                            :disabled="processing"
+                                            class="w-full cursor-pointer"
+                                        >
+                                            <UserRoundPen class="mr-2 h-4 w-4" />
+                                            Act as user
+                                        </DropdownMenuItem>
+                                    </Form>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </td>

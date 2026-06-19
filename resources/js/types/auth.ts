@@ -1,3 +1,9 @@
+export type Impersonator = {
+    id: number;
+    name: string;
+    username: string;
+};
+
 export type User = {
     id: number;
     name: string;
@@ -11,6 +17,7 @@ export type User = {
 
 export type Auth = {
     user: User;
+    impersonator?: Impersonator | null;
 };
 
 export type TwoFactorConfigContent = {

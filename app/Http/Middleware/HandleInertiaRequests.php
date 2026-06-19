@@ -35,11 +35,15 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $impersonatorId = $request->session()->get('impersonator_id');
+        $impersonator = $impersonatorId ? \App\Models\User::find($impersonatorId) : null;
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
+                'impersonator' => $impersonator ? $impersonator->only(['id', 'name', 'username']) : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

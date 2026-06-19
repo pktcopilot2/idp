@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateUserRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -189,6 +190,48 @@ class UserController extends Controller
         $user->save();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$user->name} has been updated."]);
+
+        return redirect()->route('users.index');
+    }
+
+    /**
+     * Impersonate the given user.
+     */
+    public function impersonate(User $user): RedirectResponse
+    {
+        $admin = Auth::user();
+
+        abort_if($admin->getAuthIdentifier() === $user->getAuthIdentifier(), 403, 'You cannot impersonate yourself.');
+        abort_if($user->locked_at || ! $user->active, 403, 'You cannot impersonate a locked or inactive user.');
+        abort_if(session()->has('impersonator_id'), 403, 'You are already impersonating another user.');
+
+        session()->put('impersonator_id', $admin->getAuthIdentifier());
+
+        Auth::login($user);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "You are now acting as {$user->name}."]);
+
+        return redirect()->route('dashboard');
+    }
+
+    /**
+     * Stop impersonating and return to the original user.
+     */
+    public function stopImpersonating(): RedirectResponse
+    {
+        $impersonatorId = session()->pull('impersonator_id');
+
+        if (! $impersonatorId) {
+            return redirect()->route('dashboard');
+        }
+
+        $admin = User::find($impersonatorId);
+
+        if ($admin) {
+            Auth::login($admin);
+
+            Inertia::flash('toast', ['type' => 'success', 'message' => 'You are now back to your own account.']);
+        }
 
         return redirect()->route('users.index');
     }
