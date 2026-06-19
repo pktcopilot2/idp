@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\HandleAppearance;
+use App\Http\Middleware\CaptureOidcNonce;
 use App\Http\Middleware\HandleInvalidOauthClient;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
             HandleInvalidOauthClient::class,
+            CaptureOidcNonce::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
     })

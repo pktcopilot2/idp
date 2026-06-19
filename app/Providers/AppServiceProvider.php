@@ -31,8 +31,9 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configurePassport();
 
-        // prefer https
-        // URL::forceScheme('https');
+        if (app()->isProduction()) {
+            URL::forceScheme('https');
+        }
 
         Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
             $event->extendSocialite('keycloak', \SocialiteProviders\Keycloak\Provider::class);
@@ -47,6 +48,12 @@ class AppServiceProvider extends ServiceProvider
     {
         Passport::useClientModel(Client::class);
         Passport::useAccessTokenEntity(\App\Bridge\AccessToken::class);
+        $passportScopes = Passport::$scopes;
+        $passportScopes['openid'] ??= 'Authenticate users with OpenID Connect';
+        $passportScopes['profile'] ??= 'Access basic profile information';
+        $passportScopes['email'] ??= 'Access user email information';
+        $passportScopes['offline_access'] ??= 'Request refresh token access';
+        Passport::tokensCan($passportScopes);
 
         Passport::authorizationView(function (array $params) {
             // This callback is only reached when skipsAuthorization() returns false,

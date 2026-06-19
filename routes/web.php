@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\OidcController;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -10,6 +12,20 @@ Route::inertia('/', 'Welcome', [
 Route::get('/test', function () {
     // ...
 })->name('test');
+
+Route::get('/.well-known/openid-configuration', [OidcController::class, 'discovery'])->name('oidc.discovery');
+
+Route::prefix('oidc')->group(function () {
+    Route::get('/jwks', [OidcController::class, 'jwks'])->name('oidc.jwks');
+    Route::post('/token', [OidcController::class, 'token'])
+        ->middleware('throttle')
+        ->withoutMiddleware([PreventRequestForgery::class])
+        ->name('oidc.token');
+    Route::match(['GET', 'POST'], '/userinfo', [OidcController::class, 'userinfo'])
+        ->middleware('auth:api')
+        ->withoutMiddleware([PreventRequestForgery::class])
+        ->name('oidc.userinfo');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
