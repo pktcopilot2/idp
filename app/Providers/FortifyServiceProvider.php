@@ -6,9 +6,10 @@ use App\Actions\Fortify\Authenticate;
 use App\Actions\Fortify\ConfirmPassword;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\RedirectIfEmailMfaRequired;
+use App\Actions\Fortify\RedirectIfMfaRequired;
 use App\Actions\Fortify\RedirectIfPasswordlessAuthenticationRequired;
-use App\Actions\Fortify\RedirectIfWhatsappMfaRequired;
 use App\Actions\Fortify\RedirectIfPasswordResetRequired;
+use App\Actions\Fortify\RedirectIfWhatsappMfaRequired;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Features\EmailMfa;
 use App\Features\TwoFactorAuthentication as TwoFactorAuthenticationFeature;
@@ -174,9 +175,7 @@ class FortifyServiceProvider extends ServiceProvider
                 config('fortify.limiters.login') ? null : EnsureLoginIsNotThrottled::class,
                 config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
                 RedirectIfPasswordResetRequired::class,
-                Feature::for(null)->active(TwoFactorAuthenticationFeature::class) ? RedirectsIfTwoFactorAuthenticatable::class : null,
-                Feature::for(null)->active(WhatsAppMfa::class) ? RedirectIfWhatsappMfaRequired::class : null,
-                Feature::for(null)->active(EmailMfa::class) ? RedirectIfEmailMfaRequired::class : null,
+                RedirectIfMfaRequired::class,
                 AttemptToAuthenticate::class,
                 PrepareAuthenticatedSession::class,
             ];

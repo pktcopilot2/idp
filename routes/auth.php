@@ -14,6 +14,9 @@ Route::post('/login/passwordless', [\App\Http\Controllers\PasswordlessLoginContr
 Route::get('/login/passwordless/method', [\App\Http\Controllers\PasswordlessLoginController::class, 'selectMethod'])->name('passwordless.method.select');
 Route::post('/login/passwordless/method', [\App\Http\Controllers\PasswordlessLoginController::class, 'chooseMethod'])->name('passwordless.method.choose')->middleware('throttle:6,1');
 
+Route::get('/login/password-mfa/method', [\App\Http\Controllers\PasswordMfaMethodController::class, 'selectMethod'])->name('password-mfa.method.select');
+Route::post('/login/password-mfa/method', [\App\Http\Controllers\PasswordMfaMethodController::class, 'chooseMethod'])->name('password-mfa.method.choose')->middleware('throttle:6,1');
+
 Route::get('/email-mfa-challenge', [\App\Http\Controllers\EmailMfaChallengeController::class, 'create'])->name('email-mfa.create');
 Route::post('/email-mfa-challenge', [\App\Http\Controllers\EmailMfaChallengeController::class, 'store'])->name('email-mfa.store')->middleware('throttle:email-mfa');
 Route::post('/email-mfa-challenge/resend', [\App\Http\Controllers\EmailMfaChallengeController::class, 'resend'])->name('email-mfa.resend')->middleware('throttle:email-mfa');
