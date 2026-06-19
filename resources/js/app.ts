@@ -2,6 +2,7 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { initializeTheme } from '@/composables/useAppearance';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
+import { initializeDxDataGridDefaults } from '@/configs/dxDataGridConfig';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 
@@ -31,3 +32,6 @@ initializeTheme();
 
 // This will listen for flash toast data from the server...
 initializeFlashToast();
+
+// This will set DevExtreme DataGrid default props and configurations...
+initializeDxDataGridDefaults();

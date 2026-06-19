@@ -26,6 +26,8 @@ Route::middleware(['auth'])->group(function () {
     Route::put('clients/{client}/roles/assignments/{user}', [App\Http\Controllers\ClientRoleController::class, 'syncUserRoles'])->name('clients.roles.assignments.sync');
 
     Route::get('users', [App\Http\Controllers\UserController::class, 'index'])->name('users.index');
+    Route::get('users/data', [App\Http\Controllers\UserController::class, 'usersData'])->name('users.data');
+    Route::get('users/{user}/sessions/data', [App\Http\Controllers\UserController::class, 'sessionsData'])->name('users.sessions.data');
     Route::get('users/{user}/edit', [App\Http\Controllers\UserController::class, 'edit'])->name('users.edit');
     Route::put('users/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('users.update');
     Route::get('users/{user}', [App\Http\Controllers\UserController::class, 'show'])->name('users.show');

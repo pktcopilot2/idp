@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Passport\Client;
 use App\Models\User;
+use App\Http\Requests\DxDataGridRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Helpers\DxDatagridHelper;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -15,61 +18,63 @@ use Inertia\Response;
 class UserController extends Controller
 {
     /**
-     * Display a listing of users with their active sessions.
+     * Display a listing of users.
      */
-    public function index(Request $request): Response
+    public function index(): Response
     {
-        $search = $request->input('search');
-        $perPage = $request->input('per_page', '20');
+        return Inertia::render('users/Index', [
+            'usersDataUrl' => route('users.data'),
+            'clients' => Client::where('revoked', false)->orderBy('name')->get(['id', 'name']),
+        ]);
+    }
 
-        $sort = $request->input('sort', 'name');
-        $direction = $request->input('direction', 'asc');
-
-        $allowedSorts = ['name', 'username', 'email', 'active_sessions_count'];
-        if (! in_array($sort, $allowedSorts)) {
-            $sort = 'name';
-        }
-        $direction = $direction === 'desc' ? 'desc' : 'asc';
+    /**
+     * DevExtreme DataGrid data source for users.
+     */
+    public function usersData(DxDataGridRequest $request): JsonResponse
+    {
+        $allowedFields = ['id', 'name', 'email', 'username', 'active', 'locked_at', 'email_mfa_enabled', 'whatsapp_mfa_enabled', 'is_need_password_reset', 'failed_login_attempts'];
 
         $query = User::query()
-            ->with([
-                'sessions:id,user_id,ip_address,user_agent,last_activity',
-                'tokens' => fn ($q) => $q
-                    ->with('client:id,name')
-                    ->whereNotNull('name')
-                    ->where('revoked', false)
-                    ->select(['id', 'user_id', 'name', 'client_id']),
-                'assignedClients:id',
-            ])
             ->withCount('sessions as active_sessions_count')
-            ->when($search, fn ($q) => $q->where(fn ($q) => $q
-                ->where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%")
-                ->orWhere('username', 'like', "%{$search}%")
-            ))
-            ->orderBy($sort, $direction);
+            ->with(['assignedClients:id']);
 
-        if ($perPage === 'all') {
-            $collection = $query->get();
-            $count = $collection->count();
-            $users = new LengthAwarePaginator(
-                $collection, $count, $count ?: 1, 1,
-                ['path' => $request->url(), 'query' => $request->query()],
-            );
-        } else {
-            $users = $query->paginate(max(1, (int) $perPage))->withQueryString();
+        $result = DxDatagridHelper::fromRequest($request, $query, $allowedFields);
+
+        return response()->json($result);
+    }
+
+    /**
+     * DevExtreme DataGrid data source for a user's active sessions.
+     */
+    public function sessionsData(DxDataGridRequest $request, User $user): JsonResponse
+    {
+        $allowedFields = ['id', 'ip_address', 'user_agent', 'last_activity'];
+
+        $query = $user->sessions()->select($allowedFields);
+
+        $result = DxDatagridHelper::fromRequest($request, $query, $allowedFields);
+
+        // Enrich each session row with the OAuth client names linked to it.
+        $sessionIds = array_column($result['data'], 'id');
+        $tokens = $user->tokens()
+            ->with('client:id,name')
+            ->whereIn('name', $sessionIds)
+            ->where('revoked', false)
+            ->get(['name', 'client_id']);
+
+        $clientsBySession = [];
+        foreach ($tokens as $token) {
+            if ($token->client && $token->name) {
+                $clientsBySession[$token->name][] = $token->client->name;
+            }
         }
 
-        return Inertia::render('users/Index', [
-            'users' => $users,
-            'clients' => Client::where('revoked', false)->orderBy('name')->get(['id', 'name']),
-            'filters' => [
-                'search' => $search ?? '',
-                'per_page' => $perPage,
-                'sort' => $sort,
-                'direction' => $direction,
-            ],
-        ]);
+        foreach ($result['data'] as &$row) {
+            $row['clients'] = $clientsBySession[$row['id']] ?? [];
+        }
+
+        return response()->json($result);
     }
 
     /**
