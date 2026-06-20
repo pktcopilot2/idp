@@ -4,6 +4,7 @@ use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\CaptureOidcNonce;
 use App\Http\Middleware\HandleInvalidOauthClient;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\TrackClientAccess;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
             HandleInvalidOauthClient::class,
+            TrackClientAccess::class,
             CaptureOidcNonce::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);

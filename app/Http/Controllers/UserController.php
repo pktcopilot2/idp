@@ -10,7 +10,7 @@ use App\Helpers\DxDatagridHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -55,19 +55,19 @@ class UserController extends Controller
 
         $result = DxDatagridHelper::fromRequest($request, $query, $allowedFields);
 
-        // Enrich each session row with the OAuth client names linked to it.
+        // Enrich each session row with the OAuth client names accessed during that session.
         $sessionIds = array_column($result['data'], 'id');
-        $tokens = $user->tokens()
-            ->with('client:id,name')
-            ->whereIn('name', $sessionIds)
-            ->where('revoked', false)
-            ->get(['name', 'client_id']);
+
+        $accesses = DB::table('session_client_accesses')
+            ->join('oauth_clients', 'session_client_accesses.client_id', '=', 'oauth_clients.id')
+            ->whereIn('session_client_accesses.session_id', $sessionIds)
+            ->where('oauth_clients.revoked', false)
+            ->select('session_client_accesses.session_id', 'oauth_clients.name')
+            ->get();
 
         $clientsBySession = [];
-        foreach ($tokens as $token) {
-            if ($token->client && $token->name) {
-                $clientsBySession[$token->name][] = $token->client->name;
-            }
+        foreach ($accesses as $access) {
+            $clientsBySession[$access->session_id][] = $access->name;
         }
 
         foreach ($result['data'] as &$row) {
