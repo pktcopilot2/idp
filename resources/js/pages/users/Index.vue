@@ -215,16 +215,13 @@ function submitAssignClients() {
     );
 }
 
-// ============================ Status badges ============================
+// ============================ MFA badges ============================
 
-function statusBadges(user: UserRow): Array<{ label: string; variant: 'destructive' | 'secondary' | 'outline' }> {
-    const badges: Array<{ label: string; variant: 'destructive' | 'secondary' | 'outline' }> = [];
+function mfaBadges(user: UserRow): Array<{ label: string }> {
+    const badges: Array<{ label: string }> = [];
 
-    if (!user.active) badges.push({ label: 'Inactive', variant: 'outline' });
-    if (user.locked_at) badges.push({ label: 'Locked', variant: 'destructive' });
-    if (user.email_mfa_enabled) badges.push({ label: 'Email MFA', variant: 'secondary' });
-    if (user.whatsapp_mfa_enabled) badges.push({ label: 'WhatsApp MFA', variant: 'secondary' });
-    if (user.is_need_password_reset) badges.push({ label: 'Password reset required', variant: 'destructive' });
+    if (user.email_mfa_enabled) badges.push({ label: 'Email' });
+    if (user.whatsapp_mfa_enabled) badges.push({ label: 'WhatsApp' });
 
     return badges;
 }
@@ -278,27 +275,27 @@ function statusBadges(user: UserRow): Array<{ label: string; variant: 'destructi
                 <!-- Username (hidden by default, available via column chooser) -->
                 <DxColumn data-field="username" caption="Username" :visible="false" />
 
-                <!-- Status -->
+                <!-- MFA -->
                 <DxColumn
-                    caption="Status"
+                    caption="MFA"
                     :allow-filtering="false"
                     :allow-sorting="false"
-                    cell-template="statusCell"
+                    cell-template="mfaCell"
                 />
-                <template #statusCell="{ data: row }">
+                <template #mfaCell="{ data: row }">
                     <div class="flex flex-wrap gap-1 py-0.5">
                         <Badge
-                            v-for="b in statusBadges(row.data)"
+                            v-for="b in mfaBadges(row.data)"
                             :key="b.label"
-                            :variant="b.variant"
+                            variant="secondary"
                         >
                             {{ b.label }}
                         </Badge>
                         <span
-                            v-if="statusBadges(row.data).length === 0"
+                            v-if="mfaBadges(row.data).length === 0"
                             class="text-xs text-muted-foreground"
                         >
-                            Active
+                            —
                         </span>
                     </div>
                 </template>
