@@ -7,12 +7,13 @@ import {
     MoreHorizontal,
     Pencil,
     Smartphone,
+    Trash2,
     UserCheck,
     UserX,
     UserRoundPen,
     Users,
 } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
 import {
     DxDataGrid,
     DxColumn,
@@ -111,6 +112,7 @@ const userStore = createDxRemoteStore<UserRow, number>({
 });
 
 const sessionStores = new Map<number, ReturnType<typeof createDxRemoteStore<SessionRow, string>>>();
+const sessionRefreshKeys = reactive<Record<number, number>>({});
 
 const createSessionStore = (userId: number) => {
     const cached = sessionStores.get(userId);
@@ -124,6 +126,11 @@ const createSessionStore = (userId: number) => {
 
     return store;
 };
+
+function refreshSessionGrid(userId: number) {
+    sessionStores.delete(userId);
+    sessionRefreshKeys[userId] = (sessionRefreshKeys[userId] ?? 0) + 1;
+}
 
 // ============================ Grid selection & refresh ============================
 
@@ -483,6 +490,7 @@ function mfaBadges(user: UserRow): Array<{ label: string }> {
                         <h3 class="mb-2 text-sm font-semibold text-foreground">Active Sessions</h3>
 
                         <DxDataGrid
+                            :key="`sessions-${userDetail.data.id}-${sessionRefreshKeys[userDetail.data.id] ?? 0}`"
                             :data-source="createSessionStore(userDetail.data.id)"
                             v-bind="dxDataGridBaseProps"
                         >
@@ -547,6 +555,31 @@ function mfaBadges(user: UserRow): Array<{ label: string }> {
                                         —
                                     </span>
                                 </div>
+                            </template>
+
+                            <DxColumn
+                                caption=""
+                                :allow-filtering="false"
+                                :allow-sorting="false"
+                                :width="60"
+                                alignment="center"
+                                cell-template="revokeSessionCell"
+                            />
+                            <template #revokeSessionCell="{ data: sessionRow }">
+                                <Form
+                                    v-bind="UserController.destroySession.form({ user: userDetail.data.id, session: sessionRow.data.id })"
+                                    @success="() => { refreshGrid(); refreshSessionGrid(userDetail.data.id); }"
+                                    #default="{ processing }"
+                                >
+                                    <button
+                                        type="submit"
+                                        :disabled="processing"
+                                        class="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50"
+                                        title="Revoke session"
+                                    >
+                                        <Trash2 class="h-3.5 w-3.5" />
+                                    </button>
+                                </Form>
                             </template>
 
                             <DxPaging :page-size="100" />

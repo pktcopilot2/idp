@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Passport\Client;
+use App\Models\Session;
 use App\Models\User;
 use App\Http\Requests\DxDataGridRequest;
 use App\Http\Requests\UpdateUserRequest;
@@ -78,16 +79,51 @@ class UserController extends Controller
     }
 
     /**
+     * Revoke a single session for a user.
+     */
+    public function destroySession(User $user, Session $session): RedirectResponse
+    {
+        abort_if($session->user_id !== $user->id, 404);
+
+        DB::table('session_client_accesses')->where('session_id', $session->id)->delete();
+        $session->delete();
+
+        $this->revokeUserTokens($user);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Session has been revoked.']);
+
+        return back();
+    }
+
+    /**
      * Revoke all active sessions for a user, forcing them to log out.
      */
     public function destroySessions(User $user): RedirectResponse
     {
         $user->sessions()->delete();
-        $user->tokens()->update(['revoked' => true]);
+
+        $this->revokeUserTokens($user);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Sessions for {$user->name} have been revoked."]);
 
         return back();
+    }
+
+    private function revokeUserTokens(User $user): void
+    {
+        $tokenIds = $user->tokens()->where('revoked', false)->pluck('id');
+
+        if ($tokenIds->isEmpty()) {
+            return;
+        }
+
+        DB::table('oauth_access_tokens')
+            ->whereIn('id', $tokenIds)
+            ->update(['revoked' => true]);
+
+        DB::table('oauth_refresh_tokens')
+            ->whereIn('access_token_id', $tokenIds)
+            ->update(['revoked' => true]);
     }
 
     /**
